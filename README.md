@@ -5,7 +5,7 @@ A physics buddy sandbox: fling, smash and blow up your round blob fwend to earn 
 - [DESIGN.md](DESIGN.md): the approved game design brief.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the code is organized, and the rules for adding to it.
 
-Current state: Milestone 1. The room, HUD shell, settings, slow-mo, gravity, and the save system work. The Buddy arrives in Milestone 2.
+Current state: Milestone 2. Your fwend lives in the room: grab any part, drag, fling it into walls, watch it squash, get back up and waddle around. Slow-mo, gravity in any direction, settings and saving work. Tools, reactions and $$$ earning come next.
 
 ## Run the game
 
@@ -19,13 +19,19 @@ To try something without touching your real save, add the sandbox flag:
 D:\ClaudeCode\BestFwend\Play.bat ++ --sandbox
 ```
 
-Keys: **R** respawn, **C** clean up, **T** slow-mo, **1-9** tools, **F11** fullscreen, **Esc** closes menus. In debug runs, **F9** adds $$$ 1,000.
+Mouse: **left-drag** with the Hand selected, or **right-drag** any time, grabs and throws.
+
+Keys: **R** respawn, **C** clean up, **T** slow-mo, **1-9** tools, **F11** fullscreen, **Esc** closes menus. In debug runs, **F9** adds $$$ 1,000 and **F8** drops a test ball at the cursor.
 
 ## Run the tests
 
 ```
-& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --headless --path D:\ClaudeCode\BestFwend res://tests/run_tests.tscn --quit-after 60000
+& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --headless --path D:\ClaudeCode\BestFwend --fixed-fps 120 res://tests/run_tests.tscn --quit-after 200000
 ```
+
+`--fixed-fps 120` makes each frame exactly one physics step and stops waiting on the clock, so the physics tests (which simulate a minute or so of play) finish in seconds.
+
+To tune the Buddy, `tests/probe_buddy.tscn` prints its state over time in a few scenarios (same command, that scene instead).
 
 Look for `N passed, 0 failed` at the end; the exit code is non-zero on failure. Some tests feed in bad saves on purpose, so warnings about saves that "couldn't be read" or are "from a newer version" are expected. Tests only touch `user://tests`.
 
@@ -40,7 +46,7 @@ After adding a script with a new `class_name`, or on a fresh clone, import once:
 Renders the real game to `tests/shots/` using a throwaway save. Opens a window for a few seconds.
 
 ```
-& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --path D:\ClaudeCode\BestFwend res://tests/shots.tscn --quit-after 3000
+& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --path D:\ClaudeCode\BestFwend --fixed-fps 120 --disable-vsync res://tests/shots.tscn --quit-after 30000
 ```
 
 ## Where saves live

@@ -1,6 +1,6 @@
 extends Node2D
-## The sandbox: the room, the play world and the HUD. Owns room-wide actions such as
-## slow motion, gravity and cleaning up, and routes keyboard shortcuts.
+## The sandbox: the room, the Buddy, the Hand and the HUD. Owns room-wide actions
+## such as respawning, slow motion, gravity and cleaning up, and routes shortcuts.
 
 const BASE_GRAVITY := 1960.0
 const SLOWMO_SCALE := 0.3
@@ -9,6 +9,8 @@ const DEBRIS_GROUP := &"debris"
 
 var room: Room
 var world: Node2D
+var buddy: Buddy
+var grabber: Grabber
 var hud: Hud
 var slowmo := false
 var gravity := Vector2(0, BASE_GRAVITY)
@@ -20,6 +22,10 @@ func _ready() -> void:
 	world = Node2D.new()
 	world.name = "World"
 	add_child(world)
+	grabber = Grabber.new()
+	grabber.name = "Grabber"
+	grabber.bounds = room.interior()
+	add_child(grabber)
 	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
@@ -29,6 +35,7 @@ func _ready() -> void:
 	hud.slowmo_toggled.connect(set_slowmo)
 	hud.gravity_chosen.connect(set_gravity)
 	set_gravity(gravity)
+	_spawn_buddy()
 	if not Game.load_notice.is_empty():
 		Events.notification_posted.emit.call_deferred(Game.load_notice)
 
@@ -50,6 +57,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.set_setting("fullscreen", not Game.profile.settings["fullscreen"])
 	elif event.is_action_pressed("dev_cash") and OS.is_debug_build():
 		Game.earn(1000, &"dev")
+	elif event.is_action_pressed("dev_ball") and OS.is_debug_build():
+		spawn_test_ball(get_global_mouse_position())
 	else:
 		for number in range(1, Controls.HOTBAR_SLOTS + 1):
 			if event.is_action_pressed("tool_%d" % number):
@@ -77,14 +86,41 @@ func set_gravity(value: Vector2) -> void:
 	Events.gravity_changed.emit(value)
 
 
-## The Buddy arrives in Milestone 2; until then this only says so.
+## Replaces the Buddy with a fresh, whole one at the spawn point.
 func respawn() -> void:
-	Events.notification_posted.emit("Your fwend moves in next milestone.")
+	if buddy != null:
+		if grabber.held_buddy == buddy:
+			grabber.forget()
+		buddy.queue_free()
+		buddy = null
+	_spawn_buddy()
+	Events.buddy_respawned.emit()
 
 
 func clean_up() -> void:
 	room.clear_decals()
 	for node in get_tree().get_nodes_in_group(DEBRIS_GROUP):
+		if node == grabber.held:
+			grabber.forget()
 		node.queue_free()
 	Events.room_cleaned.emit()
 	Events.notification_posted.emit("Squeaky clean.")
+
+
+func spawn_test_ball(at: Vector2) -> TestBall:
+	var ball := TestBall.new()
+	ball.position = at.clamp(Vector2(60, 60), room.interior().end - Vector2(60, 60))
+	world.add_child(ball)
+	return ball
+
+
+func _spawn_buddy() -> void:
+	buddy = Buddy.new()
+	buddy.bounds = room.interior()
+	buddy.build(room.spawn_point(), Color(Game.profile.buddy_color))
+	buddy.lost.connect(_on_buddy_lost)
+	world.add_child(buddy)
+
+
+func _on_buddy_lost() -> void:
+	respawn.call_deferred()

@@ -47,10 +47,9 @@ func test_slowmo_toggle() -> bool:
 	check_eq(Engine.time_scale, main.SLOWMO_SCALE, "slow")
 	check(main.hud.slowmo_button.button_pressed, "button shows it")
 	# Slow-mo should shrink each physics step, not drop steps, so motion stays smooth.
-	var start := Time.get_ticks_msec()
-	await physics_frames(60)
-	var real_seconds := (Time.get_ticks_msec() - start) / 1000.0
-	check(real_seconds < 0.8, "60 physics steps took %.2f real seconds in slow-mo" % real_seconds)
+	await physics_frames(2)
+	var step := get_physics_process_delta_time()
+	check(is_equal_approx(step, main.SLOWMO_SCALE / 120.0), "physics step shrinks in slow-mo (%.5f)" % step)
 	main.hud.slowmo_button.toggled.emit(false)
 	check_eq(Engine.time_scale, 1.0, "button turns it off")
 	return true
@@ -68,18 +67,11 @@ func test_gravity_changes_the_space() -> bool:
 
 
 func test_falling_object_lands_on_the_floor() -> bool:
-	var ball := RigidBody2D.new()
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = 40
-	shape.shape = circle
-	ball.add_child(shape)
-	ball.position = main.room.spawn_point()
-	ball.add_to_group(main.DEBRIS_GROUP)
-	main.world.add_child(ball)
-	await physics_frames(240)
+	main.buddy.torso.global_position = Vector2(1700, 700) # Out of the ball's way.
+	var ball: TestBall = main.spawn_test_ball(Vector2(200, 300))
+	await physics_frames(480)
 	check(ball.position.y < Room.FLOOR_Y, "stays above the floor (y=%.0f)" % ball.position.y)
-	check(ball.position.y > Room.FLOOR_Y - 60, "came to rest on it (y=%.0f)" % ball.position.y)
+	check(ball.position.y > Room.FLOOR_Y - TestBall.RADIUS - 20, "came down onto it (y=%.0f)" % ball.position.y)
 	main.clean_up()
 	await frames(1)
 	check(not is_instance_valid(ball), "clean up removes debris")

@@ -5,6 +5,8 @@ extends Node
 const OUT := "res://tests/shots/"
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 
+var main: Node2D
+
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(OUT)
@@ -18,42 +20,48 @@ func _ready() -> void:
 
 
 func _capture() -> void:
-	var main: Node2D = MAIN_SCENE.instantiate()
+	main = MAIN_SCENE.instantiate()
 	add_child(main)
-	await _wait()
-	await _shot("1_room")
+	var grab: Grabber = main.grabber
+	grab.manual_target = true
+	await _seconds(5.0)
+	await _shot("1_standing")
 
-	Game.earn(12345, &"shots")
-	Events.notification_posted.emit("Squeaky clean.")
-	main.hud.gravity_panel.show()
-	await get_tree().create_timer(0.4).timeout
-	await _shot("2_money_toast_gravity")
+	var buddy: Buddy = main.buddy
+	grab.grab_at(buddy.head.global_position + Vector2(0, -20))
+	grab.target = Vector2(700, 300)
+	await _seconds(0.9)
+	await _shot("2_dangling_by_head")
 
-	main.hud.gravity_panel.hide()
-	main.hud.settings_panel.show()
-	await _wait()
-	await _shot("3_settings")
+	grab.target = Vector2(500, 400)
+	await _seconds(0.4)
+	for index in 10:
+		grab.target = Vector2(500 + index * 80, 400)
+		await _physics(1)
+	grab.release()
+	await _seconds(0.08)
+	await _shot("3_thrown_scream")
+	while buddy.torso.global_position.x < 1700 and buddy.torso.linear_velocity.x > 0:
+		await _physics(1)
+	await _physics(2)
+	await _shot("4_wall_impact_squash")
 
-	main.hud.settings_panel.hide()
-	main.hud.category_buttons[2].pressed.emit()
-	main.hud.category_buttons[2].button_pressed = true
-	var ball := RigidBody2D.new()
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = 50
-	shape.shape = circle
-	ball.add_child(shape)
-	ball.position = main.room.spawn_point()
-	main.world.add_child(ball)
-	await get_tree().create_timer(1.0).timeout
-	await _shot("4_other_tab")
+	await _seconds(4.0)
+	main.spawn_test_ball(Vector2(400, 200))
+	main.set_gravity(Vector2(-1960, 0))
+	await _seconds(4.0)
+	await _shot("5_gravity_left")
 	print("shots done")
 	get_tree().quit()
 
 
-func _wait() -> void:
-	for _i in 4:
-		await get_tree().process_frame
+func _seconds(seconds: float) -> void:
+	await _physics(int(seconds * 120))
+
+
+func _physics(count: int) -> void:
+	for _i in count:
+		await get_tree().physics_frame
 
 
 func _shot(shot_name: String) -> void:

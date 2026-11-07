@@ -10,7 +10,8 @@ scenes/            main.tscn (the sandbox).
 scripts/main.gd    The sandbox: room, world, HUD; slow-mo, gravity, clean up, shortcuts.
 scripts/core/      Services with no UI or physics: Events, Game, Profile, SaveStore, etc.
 scripts/data/      Resource classes and catalogs (ToolDef, ToolCatalog).
-scripts/world/     Things in the physics world: Room now; Buddy, objects, decals next.
+scripts/world/     Things in the physics world: Room, Grabber (the Hand), Layers, TestBall.
+scripts/world/buddy/  The Buddy: body and motor, parts, and its drawing.
 scripts/ui/        HUD, panels, theme and icon art.
 tests/             Automated tests and the screenshot tool. Excluded from builds.
 docs/              This document.
@@ -81,8 +82,25 @@ The original file is kept once as `pre_v<N>.json`. Adding a new key read with a 
 
 ## Physics
 
-- 120 physics ticks per second, gravity 1960 px/s² (the room is 1920x1080, so the Buddy is roughly 1 m = 200 px).
-- The walls are one `StaticBody2D` on collision layer 1 with bounce 0.3 and friction 0.9.
+- 120 physics ticks per second, gravity 1960 px/s², 24 solver iterations. The Buddy is about 250 px tall.
+- Collision layers live in `Layers`: walls 1, Buddy 2, objects 4. Buddy parts don't collide with each other.
+- The walls are one `StaticBody2D` with bounce 0.3 and friction 0.9. The floor is at y = 880 so the toolbar sits on the floorboards, below anything standing.
+
+## The Buddy
+
+[buddy.gd](../scripts/world/buddy/buddy.gd) builds six `BuddyPart` rigid bodies (head, torso, two arms, two legs) pinned to the torso with `PinJoint2D`s. Keep the `Buddy` node at the origin: the parts move, not it.
+
+- **Bend limits are ours, not the engine's.** Godot's 2D joint angle limits keep adding energy, so a resting body never settles. `_enforce_limits` nudges the spins of a limb and the torso when the limb bends past its range.
+- **States:** `RAGDOLL` (limp), `GETTING_UP` (standing forces fade in over 0.8 s), `STANDING` (balancing and wandering), `GRABBED`. It gets up once it has been calm near the ground for 0.6 s.
+- **Standing** is a spring that holds the torso at hip height above the ground (a ray along gravity), plus spin steering that keeps the torso, head and legs upright. Walking is a sideways force and a leg-swing angle. Everything is relative to gravity, so it stands on whichever wall gravity points at, and goes limp in zero-G.
+- **Falls:** tipping past 1 rad, no ground for 0.3 s, or any hit over `KNOCKDOWN_DV`.
+- **Impacts:** `BuddyPart._integrate_forces` measures how much a contact changed the part's velocity, counting only changes that push back against how fast the surfaces were closing (Godot's reported 2D contact impulses are unreliable). That drives squash and `Events.buddy_hit` (`force` is in px/s of velocity change; a hard wall slam is 2,000-5,000).
+- **Drawing:** [buddy_view.gd](../scripts/world/buddy/buddy_view.gd) draws all parts from their transforms: head and torso outlines first so they read as one blob, limbs shifted onto their joints so brief stretch never shows a gap, squash along the last impact or stretch along motion, and a face with expressions picked from state.
+- **Lost:** a part outside the room or a NaN position emits `lost`, and the sandbox respawns it.
+
+## The Hand
+
+[grabber.gd](../scripts/world/grabber.gd) picks the grabbable body under the cursor (Buddy parts by `pick_priority`, then closest) and each physics step applies a critically-damped-ish spring force toward the cursor at the grabbed point. The Buddy's whole weight hangs from that point so the rest dangles, while 55% of the chasing force goes to the torso so limbs lead without tearing loose. Release scales velocities by `THROW_BOOST` and caps them at `MAX_THROW_SPEED`. The target is clamped inside the room.
 - Gravity changes go through `main.set_gravity`, which sets the space's default gravity and wakes sleeping debris.
 - Slow-mo sets `Engine.time_scale`. Physics still steps 120 times per real second, with smaller steps, so it stays smooth.
 - Anything Clean Up should remove joins the `debris` group.
@@ -107,4 +125,5 @@ Every system gets tests in `tests/test_*.gd`, listed in `run_tests.gd`. Commands
 - Test methods must end with `return true`.
 - Call `reset_game("folder")` before touching `Game`.
 - Headless runs can't show how things look. After visual changes, run the screenshot tool and look.
+- Physics tests count physics frames, never real time, and run with `--fixed-fps 120`. Anything random (wandering) must pass on any seed: assert on totals, not exact paths.
 - Every new feature gets debug cheats (F9 adds $$$ 1,000 in debug runs) and a test.

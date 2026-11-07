@@ -10,6 +10,7 @@ const KEYS := {
 	"toggle_fullscreen": KEY_F11,
 	"close_menu": KEY_ESCAPE,
 	"dev_cash": KEY_F9, # Debug builds only.
+	"dev_ball": KEY_F8, # Debug builds only.
 }
 const HOTBAR_SLOTS := 9
 

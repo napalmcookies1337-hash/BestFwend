@@ -4,12 +4,11 @@ extends Node2D
 ## where blood and scorch marks will stay (Milestone 2-3).
 
 const SIZE := Vector2(1920, 1080)
-const FLOOR_Y := 930.0
+## High enough that the toolbar sits on the floorboards, never over the Buddy's feet.
+const FLOOR_Y := 880.0
 const WALL_THICKNESS := 400.0
 const BOUNCE := 0.3
 const FRICTION := 0.9
-## Collision layer the walls sit on. Buddy parts and objects collide with it.
-const WALL_LAYER := 1
 
 ## Background themes. More are bought in Milestone 6.
 const BACKGROUNDS := {
@@ -33,7 +32,7 @@ func _ready() -> void:
 	name = "Room"
 	walls = StaticBody2D.new()
 	walls.name = "Walls"
-	walls.collision_layer = WALL_LAYER
+	walls.collision_layer = Layers.WALLS
 	walls.collision_mask = 0
 	var wall_material := PhysicsMaterial.new()
 	wall_material.bounce = BOUNCE
@@ -51,9 +50,14 @@ func _ready() -> void:
 	set_background(Game.profile.background)
 
 
-## Where a fresh Buddy appears.
+## Where a fresh Buddy's torso appears: a short drop above the floor.
 func spawn_point() -> Vector2:
-	return Vector2(SIZE.x / 2, FLOOR_Y - 220)
+	return Vector2(SIZE.x / 2, FLOOR_Y - 340)
+
+
+## The open space inside the walls.
+func interior() -> Rect2:
+	return Rect2(Vector2.ZERO, Vector2(SIZE.x, FLOOR_Y))
 
 
 func set_background(id: String) -> void:

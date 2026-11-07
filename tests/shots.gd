@@ -5,7 +5,7 @@ extends Node
 const OUT := "res://tests/shots/"
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 
-var main: Node2D
+var main: Sandbox
 
 
 func _ready() -> void:
@@ -22,48 +22,70 @@ func _ready() -> void:
 func _capture() -> void:
 	main = MAIN_SCENE.instantiate()
 	add_child(main)
-	var grab: Grabber = main.grabber
-	grab.manual_target = true
-	await _seconds(1.3)
-	await _shot("1_hello")
+	main.tools.manual_cursor = true
+	main.grabber.manual_target = true
+	await _seconds(4.0)
+	var buddy := main.buddy
 
-	await _seconds(3.0)
-	var buddy: Buddy = main.buddy
-	grab.grab_at(buddy.head.global_position + Vector2(0, -20))
-	grab.target = Vector2(800, 330)
+	# Toolbar on the Boom tab with dynamite stuck to a leg and a mine nearby.
+	main.hud.category_buttons[2].pressed.emit()
+	main.hud.category_buttons[2].button_pressed = true
+	Game.select_tool("dynamite")
+	main.tools.press(buddy.parts[&"leg_l"].global_position)
+	main.place_landmine(Vector2(buddy.torso.global_position.x + 260, 400))
+	main.tools.cursor = buddy.torso.global_position + Vector2(-200, -150)
+	await _seconds(0.6)
+	await _shot("1_boom_tab_dynamite")
+	await _seconds(1.95)
+	await _shot("2_explosion")
+	await _seconds(1.5)
+	await _shot("3_missing_leg")
+
+	main.respawn()
+	await _seconds(4.0)
+	buddy = main.buddy
+	buddy.ignite(6.0)
+	await _seconds(1.2)
+	await _shot("4_on_fire")
+
+	main.respawn()
+	await _seconds(4.0)
+	buddy = main.buddy
+	buddy.freeze(6.0)
 	await _seconds(1.0)
-	await _shot("2_grabbed_head")
+	await _shot("5_frozen")
 
-	grab.target = Vector2(700, 420)
-	await _seconds(0.4)
-	for index in 12:
-		grab.target = Vector2(700 + index * 90, 420)
-		await _physics(1)
-	grab.release()
-	await _seconds(0.12)
-	await _shot("3_thrown")
-	await _seconds(0.9)
-	await _shot("4_slam_blood")
+	main.clean_up()
+	main.respawn()
+	await _seconds(4.0)
+	buddy = main.buddy
+	main.hud.category_buttons[3].pressed.emit()
+	main.hud.category_buttons[3].button_pressed = true
+	Game.select_tool("lightning")
+	main.tools.press(buddy.torso.global_position)
+	await _seconds(0.05)
+	await _shot("6_lightning")
 
 	await _seconds(2.0)
-	buddy.take_hit({"part": &"head", "force": 4000.0, "damage": 200.0, "source": &"wall",
-			"position": buddy.head.global_position + Vector2(0, -50)})
-	await _seconds(1.5)
-	await _shot("5_knocked_out")
+	main.spawn_black_hole(buddy.torso.global_position + Vector2(-380, -250), 4.0)
+	for index in 6:
+		main.spawn_object(&"brick", Vector2(300 + index * 60, 200))
+	await _seconds(1.4)
+	await _shot("7_black_hole")
 
-	buddy.revive()
-	await _seconds(0.8)
-	await _shot("6_revived_dizzy")
+	await _seconds(4.0)
+	main.hud.category_buttons[1].pressed.emit()
+	main.hud.category_buttons[1].button_pressed = true
+	Game.select_tool("katana")
+	main.tools.cursor = buddy.torso.global_position + Vector2(150, -120)
+	await _seconds(0.1)
+	await _shot("8_katana_cursor")
 	print("shots done")
 	get_tree().quit()
 
 
 func _seconds(seconds: float) -> void:
-	await _physics(int(seconds * 120))
-
-
-func _physics(count: int) -> void:
-	for _i in count:
+	for _i in int(seconds * 120):
 		await get_tree().physics_frame
 
 

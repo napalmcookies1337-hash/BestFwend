@@ -15,6 +15,9 @@ var decals: DecalLayer
 var bounds := Rect2(Vector2.ZERO, Vector2(1920, 880))
 ## [position, velocity, radius] per flying drop.
 var drops: Array = []
+## [node, local point, seconds left] for stumps and severed ends that keep bleeding.
+var wounds: Array = []
+const BLEED_RATE := 30.0
 var _rng := RandomNumberGenerator.new()
 
 
@@ -39,12 +42,31 @@ func spray(at: Vector2, damage: float, carried: Vector2 = Vector2.ZERO) -> void:
 		drops.append([at, velocity + carried * 0.25, _rng.randf_range(2.0, 6.0)])
 
 
+## Keeps dripping from `local` on `node` for `seconds`.
+func bleed(node: Node2D, local: Vector2, seconds: float) -> void:
+	wounds.append([node, local, seconds])
+
+
 func clear() -> void:
 	drops.clear()
+	wounds.clear()
 	queue_redraw()
 
 
 func _physics_process(delta: float) -> void:
+	for index in range(wounds.size() - 1, -1, -1):
+		var wound: Array = wounds[index]
+		wound[2] -= delta
+		if wound[2] <= 0.0 or not is_instance_valid(wound[0]):
+			wounds.remove_at(index)
+			continue
+		if _rng.randf() < BLEED_RATE * delta and drops.size() < MAX_LIVE_DROPS:
+			var source: Node2D = wound[0]
+			var at := source.to_global(wound[1])
+			var velocity := Vector2.from_angle(_rng.randf() * TAU) * _rng.randf_range(60.0, 260.0)
+			if source is RigidBody2D:
+				velocity += (source as RigidBody2D).linear_velocity
+			drops.append([at, velocity, _rng.randf_range(2.0, 4.5)])
 	if drops.is_empty():
 		return
 	var g := _gravity()
@@ -72,7 +94,7 @@ func _draw() -> void:
 
 func _on_buddy_hit(info: Dictionary) -> void:
 	var damage: float = info.get("damage", 0.0)
-	if damage < MIN_DAMAGE or not info.has("position"):
+	if damage < MIN_DAMAGE or not info.has("position") or not info.get("bleed", true):
 		return
 	spray(info["position"], damage)
 

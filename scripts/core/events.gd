@@ -15,6 +15,8 @@ signal buddy_knocked_out
 signal buddy_revived
 signal buddy_respawned
 signal buddy_health_changed(health: float, max_health: float, knocked_out: bool)
+## A gentle action: &"poke", &"slap", &"tickle". (Kind actions pay a little in Milestone 5.)
+signal buddy_interacted(kind: StringName, part: StringName)
 ## The Buddy said something. context is the reaction that picked the line.
 signal buddy_spoke(text: String, context: StringName)
 

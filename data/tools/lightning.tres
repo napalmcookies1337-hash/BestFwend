@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/tools/behaviors/lightning_tool.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "lightning"
+display_name = "Lightning"
+description = "A bolt from above. Your fwend attracts it."
+category = 3
+order = 0
+price = 3000
+targeting = 1
+behavior = ExtResource("2")
+use_interval = 0
+duration = 0
+strength = 1
+params = {"damage": 30.0, "reach": 140.0, "shock_seconds": 1.0}

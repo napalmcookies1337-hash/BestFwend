@@ -13,7 +13,12 @@ const TONGUE := Color("e05a6a")
 const CHEEK := Color(1.0, 0.45, 0.5, 0.45)
 const BRUISE := Color(0.42, 0.2, 0.5, 0.45)
 const BLOOD := Color("9b0f1e")
+const SOOT := Color(0.12, 0.09, 0.08, 0.55)
 const STAR := Color("ffe066")
+const ICE := Color("bfe9ff")
+const ICE_EDGE := Color("5aa9d6")
+const FLAME := [Color("ffd23f"), Color("ff8a1f"), Color("e8401c")]
+const SHOCK_FLASH := Color("fff6a8")
 const SPEED_STRETCH := 1.0 / 26000.0
 const MAX_SPEED_STRETCH := 0.18
 const SCREAM_SPEED := 1100.0
@@ -27,6 +32,15 @@ var _blink_wait := 3.0
 var _blink_left := 0.0
 var _time := 0.0
 var _circle := _circle_points(1.0, 48)
+
+
+static func mark_color(mark: int) -> Color:
+	match mark:
+		BuddyPart.Mark.BLOOD:
+			return BLOOD
+		BuddyPart.Mark.SOOT:
+			return SOOT
+	return BRUISE
 
 
 func _process(delta: float) -> void:
@@ -46,6 +60,12 @@ func _process(delta: float) -> void:
 func pick_expression() -> StringName:
 	if buddy.is_knocked_out:
 		return &"ko"
+	if buddy.frozen_time > 0.0:
+		return &"frozen"
+	if buddy.shock_time > 0.0:
+		return &"shocked"
+	if buddy.burn_time > 0.0:
+		return &"scream"
 	if buddy.hurt_time > 0.0:
 		return &"ouch"
 	if buddy.face_override != &"":
@@ -61,41 +81,58 @@ func pick_expression() -> StringName:
 
 func _draw() -> void:
 	var skin := buddy.color
+	var outline := OUTLINE_COLOR
+	if buddy.frozen_time > 0.0:
+		skin = skin.lerp(ICE, 0.6)
+		outline = ICE_EDGE.darkened(0.4)
+	if buddy.shock_time > 0.0 and fmod(_time, 0.12) < 0.06:
+		skin = SHOCK_FLASH
 	var shade := skin.darkened(0.18)
 	var belly := skin.lightened(0.35)
 	var torso := buddy.torso
 	var head := buddy.head
 
 	for id: StringName in [&"leg_l", &"leg_r"]:
-		var leg: BuddyPart = buddy.parts[id]
+		var leg: BuddyPart = buddy.parts.get(id)
+		if leg == null:
+			continue
 		var xf := _part_transform(leg)
-		_capsule(xf, leg, OUTLINE_COLOR, OUTLINE)
+		_capsule(xf, leg, outline, OUTLINE)
 		_capsule(xf, leg, shade, 0.0)
 		var foot := Vector2(0, leg.length / 2 - leg.radius * 0.35)
-		_ellipse(xf, foot, Vector2(leg.radius * 1.45, leg.radius * 0.95) + Vector2.ONE * OUTLINE, OUTLINE_COLOR)
+		_ellipse(xf, foot, Vector2(leg.radius * 1.45, leg.radius * 0.95) + Vector2.ONE * OUTLINE, outline)
 		_ellipse(xf, foot, Vector2(leg.radius * 1.45, leg.radius * 0.95), shade.darkened(0.15))
 		_draw_marks(xf, leg)
 
 	var torso_xf := _part_transform(torso)
 	var head_xf := _part_transform(head)
-	_ellipse(torso_xf, Vector2.ZERO, Vector2.ONE * (torso.radius + OUTLINE), OUTLINE_COLOR)
-	_ellipse(head_xf, Vector2.ZERO, Vector2.ONE * (head.radius + OUTLINE), OUTLINE_COLOR)
+	_ellipse(torso_xf, Vector2.ZERO, Vector2.ONE * (torso.radius + OUTLINE), outline)
+	_ellipse(head_xf, Vector2.ZERO, Vector2.ONE * (head.radius + OUTLINE), outline)
 	_ellipse(torso_xf, Vector2.ZERO, Vector2.ONE * torso.radius, skin)
 	_ellipse(torso_xf, Vector2(0, 16), Vector2(38, 34), belly)
 	_draw_marks(torso_xf, torso)
+	for stump in buddy.stumps:
+		_ellipse(torso_xf, stump * 0.92, Vector2(15, 13), BLOOD)
+		_ellipse(torso_xf, stump * 0.92, Vector2(6, 5), Color("f3d9c4"))
 	_ellipse(head_xf, Vector2.ZERO, Vector2.ONE * head.radius, skin)
 	_ellipse(head_xf, Vector2(-22, -30), Vector2(16, 11), Color(1, 1, 1, 0.28))
 	_draw_marks(head_xf, head)
 	_draw_face(head_xf)
 
 	for id: StringName in [&"arm_l", &"arm_r"]:
-		var arm: BuddyPart = buddy.parts[id]
+		var arm: BuddyPart = buddy.parts.get(id)
+		if arm == null:
+			continue
 		var xf := _part_transform(arm)
-		_capsule(xf, arm, OUTLINE_COLOR, OUTLINE)
+		_capsule(xf, arm, outline, OUTLINE)
 		_capsule(xf, arm, skin, 0.0)
 		_draw_marks(xf, arm)
 
 	draw_set_transform_matrix(Transform2D.IDENTITY)
+	if buddy.frozen_time > 0.0:
+		_draw_ice()
+	if buddy.burn_time > 0.0:
+		_draw_flames()
 	if expression == &"ko" or expression == &"dizzy":
 		_draw_stars(head.global_position - Vector2(0, head.radius + 18), expression == &"ko")
 
@@ -104,12 +141,37 @@ func _draw_marks(xf: Transform2D, part: BuddyPart) -> void:
 	for mark: Array in part.marks:
 		var at: Vector2 = mark[0]
 		var size: float = mark[1]
-		if mark[2]:
-			_ellipse(xf, at, Vector2(size, size * 0.8), BLOOD)
-			_ellipse(xf, at + Vector2(size * 0.7, size * 0.4), Vector2.ONE * size * 0.35, BLOOD)
-			_ellipse(xf, at + Vector2(0, size * 0.9), Vector2(size * 0.25, size * 0.5), BLOOD.darkened(0.1))
+		var color := mark_color(mark[2])
+		if mark[2] == BuddyPart.Mark.BLOOD:
+			_ellipse(xf, at, Vector2(size, size * 0.8), color)
+			_ellipse(xf, at + Vector2(size * 0.7, size * 0.4), Vector2.ONE * size * 0.35, color)
+			_ellipse(xf, at + Vector2(0, size * 0.9), Vector2(size * 0.25, size * 0.5), color.darkened(0.1))
 		else:
-			_ellipse(xf, at, Vector2(size, size * 0.85), BRUISE)
+			_ellipse(xf, at, Vector2(size, size * 0.85), color)
+
+
+func _draw_ice() -> void:
+	for part in buddy.part_list:
+		var at := part.global_position
+		var glint := Vector2(-part.radius * 0.4, -part.radius * 0.5)
+		draw_line(at + glint, at + glint + Vector2(10, -10), Color(1, 1, 1, 0.8), 4.0, true)
+		draw_line(at + glint + Vector2(14, 2), at + glint + Vector2(19, -3), Color(1, 1, 1, 0.6), 3.0, true)
+
+
+func _draw_flames() -> void:
+	var up := -buddy.gravity().normalized() if buddy.gravity().length() > 1.0 else Vector2.UP
+	for part in buddy.part_list:
+		for index in 3:
+			var flicker := sin(_time * 18.0 + part.radius + index * 2.1)
+			var base := part.global_position + up.orthogonal() * (index - 1) * part.radius * 0.55
+			var height := part.radius * (1.1 + 0.35 * flicker)
+			var width := part.radius * 0.45
+			var color: Color = FLAME[(index + int(_time * 10.0)) % FLAME.size()]
+			# See-through enough that the face still reads under the fire.
+			color.a = 0.6 if part == buddy.head else 0.8
+			var tip := base + up * height
+			var points := PackedVector2Array([base + up.orthogonal() * width, tip, base - up.orthogonal() * width, base - up * width * 0.6])
+			draw_colored_polygon(points, color)
 
 
 func _draw_stars(center: Vector2, knocked_out: bool) -> void:
@@ -136,8 +198,10 @@ func _draw_face(xf: Transform2D) -> void:
 	draw_set_transform_matrix(xf)
 	var look := xf.affine_inverse() * buddy.look_target
 	var gaze := look.normalized() * minf(look.length() / 40.0, 6.0)
-	var closed_eyes := [&"ouch", &"ko", &"dizzy", &"yawn"].has(expression)
-	var blinking := _blink_left > 0.0 and not closed_eyes and expression != &"scream"
+	if expression == &"frozen" or expression == &"shocked":
+		gaze = Vector2.ZERO
+	var closed_eyes := [&"ouch", &"ko", &"dizzy", &"yawn", &"laugh"].has(expression)
+	var blinking := _blink_left > 0.0 and not closed_eyes and not [&"scream", &"frozen", &"shocked"].has(expression)
 	for side: float in [-1.0, 1.0]:
 		draw_set_transform_matrix(xf)
 		var eye := Vector2(21.0 * side, -6.0)
@@ -156,6 +220,8 @@ func _draw_face(xf: Transform2D) -> void:
 				draw_polyline(spiral, PUPIL, 3.0, true)
 			&"yawn":
 				draw_arc(eye + Vector2(0, -2), 9.0, 0.15 * PI, 0.85 * PI, 10, PUPIL, 4.0, true)
+			&"laugh":
+				draw_arc(eye + Vector2(0, 4), 10.0, 1.15 * PI, 1.85 * PI, 10, PUPIL, 4.5, true)
 			_:
 				_draw_open_eye(xf, eye, side, gaze, blinking)
 	draw_set_transform_matrix(xf)
@@ -169,6 +235,11 @@ func _draw_open_eye(xf: Transform2D, eye: Vector2, side: float, gaze: Vector2, b
 		&"scream":
 			radii = Vector2(17, 22)
 			pupil = 4.0
+		&"shocked":
+			radii = Vector2(18, 22)
+			pupil = 3.0
+		&"frozen":
+			pupil = 5.0
 		&"grabbed":
 			pupil = 5.5
 		&"angry":
@@ -206,11 +277,22 @@ func _draw_mouth(xf: Transform2D, mouth: Vector2) -> void:
 			draw_arc(mouth + Vector2(0, -6), 13.0, 0.25 * PI, 0.75 * PI, 12, MOUTH, 5.0, true)
 		&"smug":
 			draw_arc(mouth + Vector2(4, -6), 12.0, 0.15 * PI, 0.55 * PI, 10, MOUTH, 5.0, true)
-		&"grabbed":
+		&"laugh":
+			var grin := PackedVector2Array()
+			for step in 13:
+				grin.append(mouth + Vector2.from_angle(PI * step / 12.0) * Vector2(16, 14))
+			draw_colored_polygon(grin, MOUTH)
+			_ellipse(xf, mouth + Vector2(0, 9), Vector2(8, 4), TONGUE)
+		&"grabbed", &"frozen":
 			_ellipse(xf, mouth, Vector2(7, 9), MOUTH)
 		&"scream":
 			_ellipse(xf, mouth + Vector2(0, 4), Vector2(15, 19), MOUTH)
 			_ellipse(xf, mouth + Vector2(0, 14), Vector2(9, 6), TONGUE)
+		&"shocked":
+			draw_rect(Rect2(mouth + Vector2(-16, -6), Vector2(32, 14)), MOUTH)
+			for tooth in 5:
+				draw_line(mouth + Vector2(-16 + tooth * 8, -6), mouth + Vector2(-16 + tooth * 8, 8), EYE_WHITE, 2.0)
+			draw_line(mouth + Vector2(-16, 1), mouth + Vector2(16, 1), EYE_WHITE, 2.0)
 		&"yawn":
 			_ellipse(xf, mouth + Vector2(0, 2), Vector2(12, 16), MOUTH)
 		&"ouch", &"dizzy":
@@ -232,6 +314,8 @@ func _part_transform(part: BuddyPart) -> Transform2D:
 	var base := part.global_transform
 	if part != buddy.torso:
 		base = base.translated(buddy.joint_gap(part))
+	if buddy.frozen_time > 0.0:
+		return base
 	var amount := part.squash
 	var axis := part.squash_axis
 	if absf(amount) < 0.03:
@@ -246,13 +330,15 @@ func _part_transform(part: BuddyPart) -> Transform2D:
 
 
 func _ellipse(xf: Transform2D, center: Vector2, radii: Vector2, fill: Color) -> void:
+	if radii == Vector2.ZERO:
+		return
 	draw_set_transform_matrix(xf * Transform2D(0.0, radii, 0.0, center))
 	draw_colored_polygon(_circle, fill)
 
 
 func _capsule(xf: Transform2D, part: BuddyPart, fill: Color, grow: float) -> void:
 	draw_set_transform_matrix(xf)
-	draw_colored_polygon(_capsule_points(part.radius + grow, part.length + grow * 2.0), fill)
+	draw_colored_polygon(capsule_points(part.radius + grow, part.length + grow * 2.0), fill)
 
 
 static func _circle_points(radius: float, count: int) -> PackedVector2Array:
@@ -262,7 +348,7 @@ static func _circle_points(radius: float, count: int) -> PackedVector2Array:
 	return points
 
 
-static func _capsule_points(radius: float, height: float) -> PackedVector2Array:
+static func capsule_points(radius: float, height: float) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	var half := maxf(height / 2.0 - radius, 0.0)
 	var steps := 14

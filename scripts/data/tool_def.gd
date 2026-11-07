@@ -28,8 +28,10 @@ const CATEGORY_NAMES := {
 @export var duration := 0.0
 @export var strength := 1.0
 @export var targeting := Targeting.POINT
-## Script that runs the tool (Milestone 4).
+## Script that runs the tool: a ToolBehavior. Several tools can share one.
 @export var behavior: Script
+## Settings the behavior reads, such as "kind" for objects or "damage".
+@export var params: Dictionary = {}
 @export var effect := ""
 @export var sound := ""
 ## Multiplies the money this tool's hits earn.

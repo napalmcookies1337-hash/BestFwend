@@ -90,6 +90,20 @@ func grab_at(at: Vector2) -> bool:
 	var body := body_at(at)
 	if body == null:
 		return false
+	_take(body, at)
+	return true
+
+
+## Puts `body` straight into the hand, as if `button` had grabbed it at `at`.
+## Tools that spawn something to throw use this.
+func hold(body: RigidBody2D, at: Vector2, button: MouseButton) -> void:
+	if held != null:
+		release()
+	_take(body, at)
+	held_button = button
+
+
+func _take(body: RigidBody2D, at: Vector2) -> void:
 	held = body
 	held_offset = body.to_local(at)
 	target = at
@@ -98,11 +112,12 @@ func grab_at(at: Vector2) -> bool:
 	_held_time = 0.0
 	_drift = 0.0
 	target_velocity = Vector2.ZERO
-	held_buddy = body.get_parent() as Buddy if body is BuddyPart else null
+	held_buddy = null
+	if body is BuddyPart and not (body as BuddyPart).detached:
+		held_buddy = body.get_parent() as Buddy
 	if held_buddy != null:
 		held_buddy.on_grabbed(body as BuddyPart)
 		Events.buddy_grabbed.emit((body as BuddyPart).part_name)
-	return true
 
 
 func release() -> void:

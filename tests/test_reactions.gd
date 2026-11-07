@@ -1,4 +1,4 @@
-﻿extends TestSuite
+extends TestSuite
 ## Milestone 3: health, knockouts, reviving, speech, faces, blood and sounds.
 ## Run with --fixed-fps 120.
 

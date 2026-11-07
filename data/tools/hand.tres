@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="ToolDef" load_steps=1 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
 
@@ -10,4 +10,8 @@ description = "Grab any part of your fwend. Fling it. Release to throw."
 category = 0
 order = 0
 price = 0
-targeting = 0
+targeting = 1
+use_interval = 0
+duration = 0
+strength = 1
+params = {}

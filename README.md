@@ -5,7 +5,7 @@ A physics buddy sandbox: fling, smash and blow up your round blob fwend to earn 
 - [DESIGN.md](DESIGN.md): the approved game design brief.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the code is organized, and the rules for adding to it.
 
-Current state: Milestone 3. Your fwend lives in the room: grab any part, drag, fling it into walls, watch it squash, bleed, swear, get knocked out and get back up. It talks in speech bubbles with a babble voice, reacts to what you do and fidgets when left alone. Tools and $$$ earning come next.
+Current state: Milestone 4. Your fwend lives in the room with all 21 tools: poke, slap, tickle and pin it; throw balls and bricks; drop anvils; swing a bat or katana; grenades, sticky dynamite, landmines, a pistol, rockets and a mini-nuke; lightning, fire, a freeze ray, black holes and telekinesis. Limbs come off. Every tool is free to use until the shop opens in Milestone 5, where $$$ earning starts.
 
 The Buddy's lines are in [data/lines/buddy_lines.gd](data/lines/buddy_lines.gd). Edit them freely.
 
@@ -21,7 +21,7 @@ To try something without touching your real save, add the sandbox flag:
 D:\ClaudeCode\BestFwend\Play.bat ++ --sandbox
 ```
 
-Mouse: **left-drag** with the Hand selected, or **right-drag** any time, grabs and throws.
+Mouse: **left-click** uses the selected tool (with the Hand, left-drag grabs and throws). **Right-drag** always grabs and throws, whatever tool is selected. Pick tools from the toolbar tabs or with **1-9**.
 
 Keys: **R** respawn, **C** clean up, **T** slow-mo, **1-9** tools, **F11** fullscreen, **Esc** closes menus. In debug runs, **F9** adds $$$ 1,000 and **F8** drops a test ball at the cursor.
 

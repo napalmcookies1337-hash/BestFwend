@@ -104,6 +104,8 @@ func _process(delta: float) -> void:
 		label.visible_characters = shown
 		if shown >= text.length():
 			label.visible_characters = -1
+	# Wrapped text only knows its height after shaping, so keep the bubble fitted.
+	panel.reset_size()
 	_place()
 	queue_redraw()
 

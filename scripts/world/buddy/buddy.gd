@@ -1,4 +1,4 @@
-﻿class_name Buddy
+class_name Buddy
 extends Node2D
 ## The fwend: six jointed rigid parts, a motor that gets it up, balances it and
 ## waddles it around, health, and the view, mind and speech bubble that give it a
@@ -18,8 +18,25 @@ signal released(velocity: Vector2)
 signal clicked(part: StringName)
 signal knocked_out
 signal revived
+signal limb_lost(limb: StringName, part: BuddyPart)
+## Something happened to it that isn't a plain hit: &"ignited", &"burned_out", &"frozen",
+## &"thawed", &"shocked", &"levitated", &"pinned", &"poke", &"slap", &"tickle", &"bomb_near",
+## &"black_hole". The mind reacts to these.
+signal affected(kind: StringName)
 
 enum State { RAGDOLL, GETTING_UP, STANDING, GRABBED }
+
+## Parts that can be cut or blown off. The head stays on.
+const LIMBS := [&"arm_l", &"arm_r", &"leg_l", &"leg_r"]
+const SEVER_DAMAGE := 25.0
+# Status effects.
+const BURN_DPS := 8.0
+const BURN_TICK := 0.5
+const PANIC_SPEED := 2.4
+## Hits on a frozen Buddy hurt this much more.
+const FROZEN_DAMAGE := 1.5
+const FREEZE_HOLD := 30.0
+const SHOCK_JITTER := 260.0
 
 ## name: [kind, radius, capsule length, mass, offset from torso, pick priority]
 const PARTS := {
@@ -100,7 +117,7 @@ const HURT_TIME := 0.7
 const MAX_HEALTH := 200.0
 ## Hits gentler than this (px/s of velocity change) do no damage.
 ## (A fall from standing height or the spawn drop lands at about 1,000-1,300.)
-const DAMAGE_START_DV := 1400.0
+const DAMAGE_START_DV := 1500.0
 const DAMAGE_PER_DV := 0.013
 const PART_DAMAGE := {&"head": 1.5, &"torso": 1.0, &"arm_l": 0.6, &"arm_r": 0.6, &"leg_l": 0.7, &"leg_r": 0.7}
 ## Hits this damaging leave blood on the skin rather than a bruise.
@@ -145,6 +162,18 @@ var face_time := 0.0
 ## A little idle animation while standing still: &"tap_foot", &"look_around", &"yawn".
 var idle_action: StringName = &""
 var idle_action_time := 0.0
+## Seconds left on fire, frozen, and being electrocuted.
+var burn_time := 0.0
+var frozen_time := 0.0
+var shock_time := 0.0
+## Held up by telekinesis rather than the Hand.
+var levitated := false
+## Torso-local spots where limbs were cut off.
+var stumps: Array[Vector2] = []
+var severed: Array[BuddyPart] = []
+var _burn_tick := 0.0
+## limb -> bend angle to hold while frozen.
+var _frozen_pose: Dictionary = {}
 
 var _rng := RandomNumberGenerator.new()
 var _calm_time := 0.0
@@ -279,6 +308,9 @@ func take_hit(info: Dictionary) -> Dictionary:
 	var force: float = info.get("force", 0.0)
 	if not info.has("damage"):
 		info["damage"] = damage_for(part_name, force)
+	if frozen_time > 0.0 and info["damage"] > 0.0:
+		info["damage"] *= FROZEN_DAMAGE
+		info["shattering"] = true
 	info["knocked_out"] = is_knocked_out
 	var damage: float = info["damage"]
 	if force >= KNOCKDOWN_DV and (state == State.STANDING or state == State.GETTING_UP):
@@ -288,7 +320,8 @@ func take_hit(info: Dictionary) -> Dictionary:
 	if damage > 0.0:
 		_since_damage = 0.0
 		if part != null and info.has("position"):
-			part.add_mark(part.to_local(info["position"]), damage >= BLEED_DAMAGE, damage)
+			var mark: BuddyPart.Mark = info.get("mark", BuddyPart.Mark.BLOOD if damage >= BLEED_DAMAGE and info.get("bleed", true) else BuddyPart.Mark.BRUISE)
+			part.add_mark(part.to_local(info["position"]), mark, damage)
 		if not is_knocked_out:
 			_set_health(health - damage)
 			if health <= 0.0:
@@ -327,6 +360,103 @@ func revive() -> void:
 	_set_health(REVIVE_HEALTH)
 	revived.emit()
 	Events.buddy_revived.emit()
+
+
+## Legs attached, not frozen, not being electrocuted, not knocked out.
+func can_stand() -> bool:
+	return parts.has(&"leg_l") and parts.has(&"leg_r") and frozen_time <= 0.0 \
+			and shock_time <= 0.0 and not is_knocked_out
+
+
+## Cuts a limb off. It becomes loose debris; the stump bleeds. Returns the limb,
+## or null if that limb is already gone or can't be cut.
+func sever(limb: StringName, kick := Vector2.ZERO, source := &"cut") -> BuddyPart:
+	if not LIMBS.has(limb) or not parts.has(limb):
+		return null
+	var part: BuddyPart = parts[limb]
+	for index in range(_anchors.size() - 1, -1, -1):
+		if _anchors[index][2] != part:
+			continue
+		var stump: Vector2 = _anchors[index][1]
+		stumps.append(stump)
+		part.detach(color, _anchors[index][3])
+		_anchors.remove_at(index)
+		_limits.remove_at(index)
+		var joint := joints[index]
+		joints.remove_at(index)
+		joint.queue_free()
+		break
+	parts.erase(limb)
+	part_list.erase(part)
+	severed.append(part)
+	total_mass -= part.mass
+	part.impacted.disconnect(_on_part_impacted)
+	part.linear_velocity += kick
+	part.angular_velocity += randf_range(-12.0, 12.0)
+	if held_part == limb:
+		held_part = &""
+	if not can_stand() and (state == State.STANDING or state == State.GETTING_UP):
+		_set_state(State.RAGDOLL)
+	limb_lost.emit(limb, part)
+	Events.buddy_limb_lost.emit(limb)
+	take_hit({"part": &"torso", "force": 0.0, "damage": SEVER_DAMAGE, "source": source,
+			"position": torso.to_global(stumps.back()), "severed": limb})
+	return part
+
+
+func ignite(seconds: float) -> void:
+	if frozen_time > 0.0:
+		_thaw()
+	var was_burning := burn_time > 0.0
+	burn_time = maxf(burn_time, seconds)
+	if not was_burning:
+		_burn_tick = 0.0
+		affected.emit(&"ignited")
+
+
+func freeze(seconds: float) -> void:
+	burn_time = 0.0
+	var was_frozen := frozen_time > 0.0
+	frozen_time = maxf(frozen_time, seconds)
+	if was_frozen:
+		return
+	_frozen_pose.clear()
+	for part in part_list:
+		if part != torso:
+			_frozen_pose[part] = angle_difference(torso.rotation, part.rotation)
+	if state != State.GRABBED:
+		_set_state(State.RAGDOLL)
+	affected.emit(&"frozen")
+
+
+func shock(seconds: float) -> void:
+	var was_shocked := shock_time > 0.0
+	shock_time = maxf(shock_time, seconds)
+	if state != State.GRABBED:
+		_set_state(State.RAGDOLL)
+	if not was_shocked:
+		affected.emit(&"shocked")
+
+
+## Telekinesis holds it up (on) or lets it go (off) without counting as a grab.
+func levitate(on: bool, velocity := Vector2.ZERO) -> void:
+	if on == levitated:
+		return
+	levitated = on
+	if on:
+		held_part = &""
+		_set_state(State.GRABBED)
+		affected.emit(&"levitated")
+	else:
+		_set_state(State.RAGDOLL)
+		released.emit(velocity)
+
+
+## Reports something that isn't a hit (a poke, a pin, a bomb landing nearby).
+func notice(kind: StringName, part: StringName = &"") -> void:
+	affected.emit(kind)
+	if kind in [&"poke", &"slap", &"tickle"]:
+		Events.buddy_interacted.emit(kind, part)
 
 
 ## Shows `expression` for `seconds`, over the face the state would pick.
@@ -371,10 +501,13 @@ func _physics_process(delta: float) -> void:
 	for key: StringName in _hit_cooldowns.keys():
 		_hit_cooldowns[key] = maxf(_hit_cooldowns[key] - delta, 0.0)
 	_heal(delta)
+	_update_statuses(delta)
 	_cap_speeds()
 	_enforce_limits()
 	var g := gravity()
 	_probe_ground(g)
+	if (state == State.STANDING or state == State.GETTING_UP) and not can_stand():
+		_set_state(State.RAGDOLL)
 	match state:
 		State.RAGDOLL:
 			_update_ragdoll(delta, g)
@@ -392,6 +525,40 @@ func _physics_process(delta: float) -> void:
 			_check_fall(delta, g)
 		State.GRABBED:
 			pass
+
+
+func _update_statuses(delta: float) -> void:
+	if burn_time > 0.0:
+		burn_time = maxf(burn_time - delta, 0.0)
+		_burn_tick += delta
+		if _burn_tick >= BURN_TICK:
+			_burn_tick -= BURN_TICK
+			var part := part_list[randi() % part_list.size()]
+			take_hit({"part": part.part_name, "force": 0.0, "damage": BURN_DPS * BURN_TICK,
+					"source": &"fire", "bleed": false, "mark": BuddyPart.Mark.SOOT,
+					"position": part.global_position, "quiet": true})
+		if burn_time == 0.0:
+			affected.emit(&"burned_out")
+	if frozen_time > 0.0:
+		frozen_time = maxf(frozen_time - delta, 0.0)
+		for part: BuddyPart in _frozen_pose:
+			if not is_instance_valid(part) or part.detached:
+				continue
+			var bend := angle_difference(torso.rotation, part.rotation)
+			part.angular_velocity = torso.angular_velocity + angle_difference(bend, _frozen_pose[part]) * FREEZE_HOLD
+		if frozen_time == 0.0:
+			_thaw()
+	if shock_time > 0.0:
+		shock_time = maxf(shock_time - delta, 0.0)
+		for part in part_list:
+			part.linear_velocity += Vector2(randf_range(-1, 1), randf_range(-1, 1)) * SHOCK_JITTER
+			part.angular_velocity += randf_range(-6.0, 6.0)
+
+
+func _thaw() -> void:
+	frozen_time = 0.0
+	_frozen_pose.clear()
+	affected.emit(&"thawed")
 
 
 func _heal(delta: float) -> void:
@@ -457,6 +624,9 @@ func _update_ragdoll(delta: float, g: Vector2) -> void:
 		if _ko_time >= REVIVE_TIME:
 			revive()
 		return
+	if not can_stand():
+		_calm_time = 0.0
+		return
 	var calm := torso.linear_velocity.length() < CALM_SPEED and absf(torso.angular_velocity) < CALM_SPIN
 	var grounded := ground_hit or ground_distance < NEAR_GROUND or _touching_anything()
 	if calm and grounded and g.length() >= MIN_GRAVITY_TO_STAND:
@@ -481,6 +651,8 @@ func _balance(delta: float, g: Vector2) -> void:
 		torso.apply_central_force(up * accel * total_mass * s)
 
 	var speed := WALK_SPEED * lerpf(HURT_WALK_FACTOR, 1.0, health / MAX_HEALTH)
+	if burn_time > 0.0:
+		speed = WALK_SPEED * PANIC_SPEED
 	var desired_side := walk_direction * speed
 	var side_speed := torso.linear_velocity.dot(side)
 	if ground_hit:
@@ -522,7 +694,8 @@ func _update_wander(delta: float, g: Vector2) -> void:
 	var side := Vector2(-up.y, up.x)
 	if walk_direction == 0.0:
 		_idle_time -= delta
-		if _idle_time <= 0.0 and idle_action == &"":
+		# On fire, it never stops running.
+		if (_idle_time <= 0.0 and idle_action == &"") or burn_time > 0.0:
 			_pick_walk_target(side)
 		return
 	_walk_time += delta
@@ -618,16 +791,30 @@ func _is_intact() -> bool:
 	return true
 
 
+## What hit it: &"wall", a WorldObject's kind (&"anvil"), &"limb", or &"object".
+static func _source_of(collider: Object) -> StringName:
+	if collider is StaticBody2D:
+		return &"wall"
+	if collider is WorldObject:
+		return (collider as WorldObject).kind
+	if collider is BuddyPart:
+		return &"limb"
+	return &"object"
+
+
 func _on_part_impacted(part: BuddyPart, delta_v: float, normal: Vector2, at: Vector2, collider: Object) -> void:
 	if delta_v >= KNOCKDOWN_DV and (state == State.STANDING or state == State.GETTING_UP):
 		_set_state(State.RAGDOLL)
 	if delta_v < HIT_EVENT_DV or _hit_cooldowns.get(part.part_name, 0.0) > 0.0:
 		return
 	_hit_cooldowns[part.part_name] = HIT_COOLDOWN
+	var force := delta_v
+	if collider is WorldObject:
+		force *= float((collider as WorldObject).spec.get("impact_scale", 1.0))
 	take_hit({
 		"part": part.part_name,
-		"force": delta_v,
+		"force": force,
 		"normal": normal,
-		"source": &"wall" if collider is StaticBody2D else &"object",
+		"source": _source_of(collider),
 		"position": at,
 	})

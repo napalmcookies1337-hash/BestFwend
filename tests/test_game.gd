@@ -53,8 +53,11 @@ func test_save_and_load_round_trip() -> bool:
 
 func test_selecting_unowned_tool_is_refused() -> bool:
 	reset_game("game_select")
-	check_eq(Game.select_tool("mini_nuke"), false, "not owned")
+	check_eq(Game.select_tool("not_a_tool"), false, "unknown tools can't be selected")
 	check_eq(Game.profile.selected_tool, "hand", "still the hand")
+	# Until the shop opens every real tool is usable; after, only owned ones.
+	check_eq(Game.can_use_tool("mini_nuke"), Game.TOOLS_FREE, "unowned tools follow TOOLS_FREE")
+	check(Game.can_use_tool("hand"), "the hand is always usable")
 	return true
 
 

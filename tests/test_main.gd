@@ -38,7 +38,15 @@ func test_toolbar_shows_hand_selected() -> bool:
 	check_eq(slots.size(), Controls.HOTBAR_SLOTS, "nine slots")
 	check_eq(slots[0].tool_id, "hand", "hand in the first slot")
 	check(slots[0].button_pressed, "hand highlighted")
-	check(slots[1].disabled, "empty slots are locked")
+	check_eq(slots[1].tool_id, "poke", "poke next")
+	check(slots[6].disabled, "empty slots are locked")
+	var counts := {}
+	for tool in ToolCatalog.all():
+		counts[tool.category] = counts.get(tool.category, 0) + 1
+	check_eq(ToolCatalog.all().size(), 21, "21 tools")
+	check_eq(counts, {0: 5, 1: 5, 2: 6, 3: 5}, "tools per category")
+	main.hud.category_buttons[2].pressed.emit()
+	check_eq(slots[5].tool_id, "mini_nuke", "Boom tab shows the nuke in slot 6")
 	return true
 
 
@@ -92,5 +100,8 @@ func test_hotkey_selects_owned_tool() -> bool:
 	main.hud.select_hotbar(1)
 	check_eq(Game.profile.selected_tool, "hand", "slot 1 is the hand")
 	main.hud.select_hotbar(5)
-	check_eq(Game.profile.selected_tool, "hand", "an empty slot changes nothing")
+	check_eq(Game.profile.selected_tool, "pin", "slot 5 is the pin")
+	main.hud.select_hotbar(8)
+	check_eq(Game.profile.selected_tool, "pin", "an empty slot changes nothing")
+	Game.select_tool("hand")
 	return true

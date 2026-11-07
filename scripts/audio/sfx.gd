@@ -75,3 +75,19 @@ func _build() -> void:
 	sounds[&"crunch"] = Synth.to_stream(Synth.hit(0.3, 0.5, 55.0, 0.45, 7))
 	sounds[&"splat"] = Synth.to_stream(Synth.hit(0.22, 0.18, 0.0, 0.0, 11), 0.6)
 	sounds[&"pop"] = Synth.to_stream(Synth.voice(900.0, 500.0, 0.05, [1.0]), 0.4)
+	# Tools.
+	sounds[&"boom"] = Synth.to_stream(Synth.hit(0.9, 0.12, 48.0, 0.5, 21), 0.95)
+	sounds[&"big_boom"] = Synth.to_stream(Synth.hit(2.2, 0.06, 32.0, 0.55, 23), 1.0)
+	sounds[&"bang"] = Synth.to_stream(Synth.hit(0.16, 0.7, 180.0, 0.25, 25), 0.9)
+	sounds[&"zap"] = Synth.to_stream(Synth.concat([Synth.hit(0.08, 0.95, 0.0, 0.0, 27),
+		Synth.voice(1400.0, 300.0, 0.35, [1.0, 0.0, 0.6, 0.0, 0.4], 60.0, 0.2, 0.4)]), 0.7)
+	sounds[&"fwoosh"] = Synth.to_stream(Synth.hit(0.6, 0.15, 0.0, 0.0, 29), 0.7)
+	sounds[&"freeze"] = Synth.to_stream(Synth.voice(2200.0, 3200.0, 0.45, [1.0, 0.0, 0.3], 25.0, 0.05, 0.25), 0.4)
+	sounds[&"whoosh"] = Synth.to_stream(Synth.hit(0.45, 0.25, 0.0, 0.0, 31), 0.6)
+	sounds[&"whistle"] = Synth.to_stream(Synth.voice(1500.0, 500.0, 1.4, [1.0, 0.1], 5.0, 0.01, 0.03, 0.05), 0.35)
+	sounds[&"swish"] = Synth.to_stream(Synth.hit(0.2, 0.3, 0.0, 0.0, 33), 0.5)
+	sounds[&"slice"] = Synth.to_stream(Synth.concat([Synth.voice(3000.0, 1800.0, 0.06, [1.0, 0.5], 0.0, 0.0, 0.5),
+		Synth.hit(0.18, 0.2, 90.0, 0.4, 35)]), 0.75)
+	sounds[&"hum"] = Synth.to_stream(Synth.voice(70.0, 55.0, 1.2, [1.0, 0.6, 0.4, 0.3], 3.0, 0.08, 0.05, 0.2), 0.7)
+	sounds[&"clink"] = Synth.to_stream(Synth.voice(2600.0, 2400.0, 0.12, [1.0, 0.0, 0.4, 0.0, 0.2], 0.0, 0.0, 0.05, 0.002), 0.45)
+	sounds[&"fuse"] = Synth.to_stream(Synth.hit(0.8, 0.85, 0.0, 0.0, 37), 0.3)

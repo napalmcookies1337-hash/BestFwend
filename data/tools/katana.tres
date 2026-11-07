@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/tools/behaviors/swing_tool.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "katana"
+display_name = "Katana"
+description = "Hold and slash. A fast enough cut takes a limb off."
+category = 1
+order = 4
+price = 2500
+targeting = 3
+behavior = ExtResource("2")
+use_interval = 0
+duration = 0
+strength = 1
+params = {"min_speed": 600.0, "force_scale": 0.8, "max_force": 3200.0, "reach": 26.0, "sever_speed": 1300.0}

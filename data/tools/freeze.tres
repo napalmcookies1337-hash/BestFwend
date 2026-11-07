@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/tools/behaviors/freeze_tool.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "freeze"
+display_name = "Freeze Ray"
+description = "Freezes it solid. Hits hurt more until it thaws."
+category = 3
+order = 2
+price = 3500
+targeting = 1
+behavior = ExtResource("2")
+use_interval = 0
+duration = 6
+strength = 1
+params = {}

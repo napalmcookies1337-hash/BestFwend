@@ -117,8 +117,18 @@ func spend(amount: int, reason: StringName) -> bool:
 	return true
 
 
+## Until the shop opens (Milestone 5), every tool is free to try.
+const TOOLS_FREE := true
+
+
+func can_use_tool(tool_id: String) -> bool:
+	if ToolCatalog.get_tool(tool_id) == null:
+		return false
+	return TOOLS_FREE or profile.owned_tools.has(tool_id)
+
+
 func select_tool(tool_id: String) -> bool:
-	if not profile.owned_tools.has(tool_id):
+	if not can_use_tool(tool_id):
 		return false
 	if profile.selected_tool != tool_id:
 		profile.selected_tool = tool_id

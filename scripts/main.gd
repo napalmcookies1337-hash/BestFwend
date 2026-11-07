@@ -1,23 +1,43 @@
+class_name Sandbox
 extends Node2D
-## The sandbox: the room, the Buddy, the Hand and the HUD. Owns room-wide actions
-## such as respawning, slow motion, gravity and cleaning up, and routes shortcuts.
+## The sandbox: the room, the Buddy, the Hand, the tools and the HUD. Owns
+## room-wide actions (respawning, slow motion, gravity, cleaning up, explosions,
+## screen shake) and routes shortcuts. Tools reach the world through this node.
 
 const BASE_GRAVITY := 1960.0
 const SLOWMO_SCALE := 0.3
 ## Nodes in this group are swept away by Clean Up (spawned objects, severed limbs).
 const DEBRIS_GROUP := &"debris"
+## Oldest loose objects disappear past this many.
+const MAX_OBJECTS := 40
+const MAX_PINS := 4
+const MAX_BLACK_HOLES := 2
+## An explosive this close to the Buddy makes it nervous.
+const BOMB_NOTICE_RANGE := 450.0
+const SHAKE_DECAY := 9.0
 
 var room: Room
 var world: Node2D
 var buddy: Buddy
 var blood: Blood
+var fx: Fx
 var grabber: Grabber
+var tools: ToolUser
 var hud: Hud
+var camera: Camera2D
 var slowmo := false
 var gravity := Vector2(0, BASE_GRAVITY)
+var objects: Array[Node] = []
+var shake := 0.0
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	_rng.randomize()
+	camera = Camera2D.new()
+	camera.position = Room.SIZE / 2
+	add_child(camera)
+	camera.make_current()
 	room = Room.new()
 	add_child(room)
 	world = Node2D.new()
@@ -27,10 +47,15 @@ func _ready() -> void:
 	blood.decals = room.decals
 	blood.bounds = room.interior()
 	add_child(blood)
+	fx = Fx.new()
+	add_child(fx)
 	grabber = Grabber.new()
 	grabber.name = "Grabber"
 	grabber.bounds = room.interior()
 	add_child(grabber)
+	tools = ToolUser.new()
+	tools.sandbox = self
+	add_child(tools)
 	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
@@ -47,6 +72,11 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+
+
+func _process(delta: float) -> void:
+	shake = maxf(shake - shake * SHAKE_DECAY * delta - delta * 2.0, 0.0)
+	camera.offset = Vector2(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1)) * shake
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -94,8 +124,9 @@ func set_gravity(value: Vector2) -> void:
 ## Replaces the Buddy with a fresh, whole one at the spawn point.
 func respawn() -> void:
 	if buddy != null:
-		if grabber.held_buddy == buddy:
+		if grabber.held != null and is_instance_valid(grabber.held) and grabber.held.get_parent() == buddy:
 			grabber.forget()
+		tools.release_all()
 		buddy.queue_free()
 		buddy = null
 	_spawn_buddy(true)
@@ -105,10 +136,13 @@ func respawn() -> void:
 func clean_up() -> void:
 	room.clear_decals()
 	blood.clear()
+	fx.clear()
+	tools.release_all()
 	for node in get_tree().get_nodes_in_group(DEBRIS_GROUP):
 		if node == grabber.held:
 			grabber.forget()
 		node.queue_free()
+	objects.clear()
 	Events.room_cleaned.emit()
 	Events.notification_posted.emit("Squeaky clean.")
 
@@ -120,6 +154,162 @@ func spawn_test_ball(at: Vector2) -> TestBall:
 	return ball
 
 
+## Puts a WorldObject of `kind` into the room at `at`.
+func spawn_object(kind: StringName, at: Vector2, velocity := Vector2.ZERO) -> WorldObject:
+	var object := WorldObject.new()
+	object.setup(kind, self)
+	object.position = at.clamp(Vector2(50, 50), room.interior().end - Vector2(50, 50))
+	object.linear_velocity = velocity
+	_track(object)
+	world.add_child(object)
+	if object.is_explosive():
+		_warn_buddy(at)
+	return object
+
+
+func place_landmine(at: Vector2) -> Landmine:
+	var down := gravity.normalized() if gravity.length() > 1.0 else Vector2.DOWN
+	var query := PhysicsRayQueryParameters2D.create(at, at + down * 2000.0, Layers.WALLS)
+	var hit := get_world_2d().direct_space_state.intersect_ray(query)
+	var spot: Vector2 = hit.get("position", at)
+	var up: Vector2 = hit.get("normal", -down)
+	var mine := Landmine.new()
+	mine.setup(self, up)
+	mine.position = spot
+	_track(mine)
+	world.add_child(mine)
+	_warn_buddy(spot)
+	return mine
+
+
+func stick_dynamite(at: Vector2, part: BuddyPart) -> StickyDynamite:
+	var stick := StickyDynamite.new()
+	stick.setup(self, at, part)
+	_track(stick)
+	world.add_child(stick)
+	_warn_buddy(at)
+	return stick
+
+
+## Nails `body` to the wall at `at`. Past MAX_PINS the oldest pin comes out.
+func add_pin(at: Vector2, body: RigidBody2D) -> PinNail:
+	var pins := get_tree().get_nodes_in_group(&"pins")
+	if pins.size() >= MAX_PINS:
+		pins[0].queue_free()
+	var nail := PinNail.new()
+	world.add_child(nail)
+	nail.setup(at, body)
+	if body is BuddyPart and not (body as BuddyPart).detached:
+		(body.get_parent() as Buddy).notice(&"pinned")
+	Sfx.play(&"clink", -4.0)
+	return nail
+
+
+## Removes a pin near `at`. Returns true if there was one.
+func remove_pin_near(at: Vector2, reach := 36.0) -> bool:
+	for nail in get_tree().get_nodes_in_group(&"pins"):
+		if not nail.is_queued_for_deletion() and (nail as Node2D).global_position.distance_to(at) <= reach:
+			nail.queue_free()
+			Sfx.play(&"clink", -8.0, 0.8)
+			return true
+	return false
+
+
+func spawn_black_hole(at: Vector2, seconds: float) -> BlackHole:
+	var holes := get_tree().get_nodes_in_group(&"black_holes")
+	if holes.size() >= MAX_BLACK_HOLES:
+		holes[0].queue_free()
+	var hole := BlackHole.new()
+	hole.setup(self, at, seconds)
+	hole.add_to_group(&"black_holes")
+	world.add_child(hole)
+	Sfx.play(&"hum", -4.0)
+	return hole
+
+
+## Blows up at `at`: pushes everything within `radius` outward (up to `power`
+## px/s at the centre), hurts the Buddy by up to `damage`, may blow limbs off
+## (`sever_chance` at point blank; `sever_target` always goes), sets off other
+## explosives, and leaves a scorch mark.
+func explode(at: Vector2, radius: float, power: float, damage: float, sever_chance: float,
+		source := &"explosion", sever_target := &"") -> void:
+	var circle := CircleShape2D.new()
+	circle.radius = radius
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = circle
+	query.transform = Transform2D(0.0, at)
+	query.collision_mask = Layers.BUDDY | Layers.OBJECTS
+	var hit_buddy: Buddy = null
+	var closest: BuddyPart = null
+	var closest_distance := INF
+	for hit in get_world_2d().direct_space_state.intersect_shape(query, 96):
+		var body := hit["collider"] as RigidBody2D
+		if body == null:
+			continue
+		var offset := body.global_position - at
+		var falloff := _falloff(offset.length(), radius)
+		var direction := offset.normalized() if offset.length() > 1.0 else Vector2.UP
+		body.linear_velocity += direction * power * falloff
+		body.angular_velocity += _rng.randf_range(-8.0, 8.0) * falloff
+		if body is BuddyPart and not (body as BuddyPart).detached:
+			hit_buddy = body.get_parent() as Buddy
+			if offset.length() < closest_distance:
+				closest_distance = offset.length()
+				closest = body
+	for other in get_tree().get_nodes_in_group(&"explosive"):
+		if other is Node2D and (other as Node2D).global_position.distance_to(at) < radius * 0.8:
+			other.call(&"prime", _rng.randf_range(0.1, 0.3))
+	if hit_buddy != null:
+		var falloff := _falloff(closest_distance, radius)
+		var direction := (closest.global_position - at).normalized()
+		for limb: StringName in Buddy.LIMBS:
+			var part: BuddyPart = hit_buddy.parts.get(limb)
+			if part == null:
+				continue
+			var limb_falloff := _falloff(part.global_position.distance_to(at), radius)
+			if limb == sever_target or (limb_falloff > 0.35 and _rng.randf() < sever_chance * limb_falloff):
+				hit_buddy.sever(limb, (part.global_position - at).normalized() * power * limb_falloff * 0.5, source)
+		hit_buddy.take_hit({"part": closest.part_name, "force": power * falloff, "damage": damage * falloff,
+				"source": &"explosion", "tool": source, "normal": direction, "position": closest.global_position})
+		closest.add_mark(closest.to_local(at.lerp(closest.global_position, 0.7)), BuddyPart.Mark.SOOT, 20.0)
+	room.decals.scorch(at.clamp(Vector2(20, 20), room.interior().end - Vector2(20, 20)), clampf(radius * 0.16, 20.0, 80.0))
+	var big := radius > 600.0
+	fx.add(0.18 if not big else 0.6, Fx.screen_flash(Color(1, 0.97, 0.85, 0.9 if big else 0.35)))
+	fx.add(0.35, Fx.flash(at, radius * 0.45, Color(1.0, 0.75, 0.25, 0.95)))
+	fx.add(0.5, Fx.ring(at, radius, Color(1, 0.9, 0.6, 0.8), 14.0))
+	fx.add(0.6, Fx.sparks(at, 18, radius * 0.9, Color("ffcf4a"), _rng.randi()))
+	fx.add(1.4, Fx.smoke(at, radius * 0.35, _rng.randi()))
+	add_shake(clampf(radius / 18.0, 8.0, 60.0))
+	Sfx.play(&"big_boom" if big else &"boom", 0.0 if big else -2.0)
+
+
+func add_shake(amount: float) -> void:
+	shake = maxf(shake, amount)
+
+
+func _falloff(distance: float, radius: float) -> float:
+	return clampf(1.0 - distance / radius, 0.0, 1.0)
+
+
+func _warn_buddy(at: Vector2) -> void:
+	if buddy != null and buddy.torso.global_position.distance_to(at) < BOMB_NOTICE_RANGE:
+		buddy.notice(&"bomb_near")
+
+
+func _track(node: Node) -> void:
+	var alive: Array[Node] = []
+	for item in objects:
+		if is_instance_valid(item) and not item.is_queued_for_deletion():
+			alive.append(item)
+	objects = alive
+	objects.append(node)
+	while objects.size() > MAX_OBJECTS:
+		var oldest: Node = objects.pop_front()
+		if oldest == grabber.held:
+			grabber.forget()
+		oldest.queue_free()
+
+
 func _spawn_buddy(respawned := false) -> void:
 	buddy = Buddy.new()
 	buddy.bounds = room.interior()
@@ -127,7 +317,19 @@ func _spawn_buddy(respawned := false) -> void:
 	if respawned:
 		buddy.set_meta(&"respawned", true)
 	buddy.lost.connect(_on_buddy_lost)
+	buddy.limb_lost.connect(_on_limb_lost)
 	world.add_child(buddy)
+
+
+func _on_limb_lost(limb: StringName, part: BuddyPart) -> void:
+	if grabber.held == part:
+		# The hand keeps the limb; the rest of the body drops.
+		grabber.held_buddy = null
+		buddy.on_released(buddy.torso.linear_velocity)
+	Sfx.play(&"splat", 0.0, 0.8)
+	blood.bleed(buddy.torso, buddy.stumps.back(), 2.5)
+	blood.bleed(part, part.cut_at, 1.5)
+	blood.spray(part.to_global(part.cut_at), 18.0)
 
 
 func _on_buddy_lost() -> void:

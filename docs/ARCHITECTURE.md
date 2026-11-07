@@ -10,7 +10,9 @@ scenes/            main.tscn (the sandbox).
 scripts/main.gd    The sandbox: room, world, HUD; slow-mo, gravity, clean up, shortcuts.
 scripts/core/      Services with no UI or physics: Events, Game, Profile, SaveStore, etc.
 scripts/data/      Resource classes and catalogs (ToolDef, ToolCatalog).
-scripts/world/     Things in the physics world: Room, Grabber (the Hand), Layers, TestBall.
+scripts/tools/     ToolUser (input for tools), ToolBehavior, and behaviors/ (one script per kind of tool).
+scripts/world/     Things in the physics world: Room, Grabber (the Hand), WorldObject, Blood, DecalLayer, Fx, Layers.
+scripts/world/placed/  Landmine, StickyDynamite, PinNail, BlackHole.
 scripts/world/buddy/  The Buddy: body and motor, parts, and its drawing.
 scripts/ui/        HUD, panels, theme and icon art.
 tests/             Automated tests and the screenshot tool. Excluded from builds.
@@ -48,7 +50,25 @@ Declared in [events.gd](../scripts/core/events.gd), many ahead of the milestone 
 
 ## Tools
 
-A tool is a `ToolDef` resource in `data/tools/` with its name, category, price, strength, targeting and a `behavior` script (Milestone 4). `ToolCatalog` finds every file there, so nothing else needs registering. Tools are unlimited: `use_interval` exists only to rate-limit held tools like the pistol, never as a cooldown.
+A tool is a `ToolDef` resource in `data/tools/`: name, description, category, toolbar order, price, targeting, `use_interval`, `duration`, `strength`, a `behavior` script and a `params` dictionary. `ToolCatalog` finds every file there, so adding a tool needs no registration. Tools are unlimited: `use_interval` only rate-limits held tools like the pistol, never a cooldown. `Game.TOOLS_FREE` makes every tool usable until the shop exists; Milestone 5 turns it off.
+
+- **Input:** [tool_user.gd](../scripts/tools/tool_user.gd) takes left-clicks for any tool except the Hand (the Grabber has the Hand and every right-click). Targeting `POINT` or `BUDDY` tools run press then release at once. `HOLD` and `DRAG` tools stay active and get `hold()` every physics step until the button comes up.
+- **Behaviors** live in [scripts/tools/behaviors/](../scripts/tools/behaviors/) and extend `ToolBehavior`. Similar tools share one and differ by data: `spawn_in_hand_tool` (ball, brick, grenade), `drop_tool` (anvil, mini-nuke), `swing_tool` (bat, katana). A behavior reaches the world only through `sandbox` (the main scene, class `Sandbox`).
+- **To add a tool:** write a behavior (or reuse one), add a `.tres` with its params, and draw an icon case in `ToolArt.draw_icon`. Add a test to `tests/test_tools.gd`.
+
+### Shared tool systems (on `Sandbox`)
+
+- `spawn_object(kind, at, velocity)`: a `WorldObject` (ball, brick, anvil, grenade, rocket, nuke). Kinds are data in `WorldObject.KINDS`: shape, mass, bounce, `impact_scale` (how hard its hits count against the Buddy), and for explosives a fuse and a blast. At most 40 loose objects; the oldest go first.
+- `explode(at, radius, power, damage, sever_chance, source, sever_target)`: pushes every body outward with falloff, hurts the Buddy's nearest part, may blow limbs off, sets off nearby explosives (anything in the `explosive` group with `prime()`), scorches the room, flashes, shakes the camera and booms.
+- `place_landmine`, `stick_dynamite`, `add_pin` / `remove_pin_near`, `spawn_black_hole`: placed items in `scripts/world/placed/`.
+- `fx.add(seconds, painter)`: short visual effects. `Fx` has ready-made painters (flash, ring, bolt, sparks, smoke, screen flash).
+- `add_shake(amount)`: camera shake.
+
+### Buddy status effects
+
+- `sever(limb, kick, source)`: cuts a limb off. The limb becomes a detached `BuddyPart` (debris that draws itself, can be grabbed as an object, removed by Clean Up). The stump bleeds and is drawn on the torso. No legs means it can't stand.
+- `ignite(seconds)`: soot and damage over time, and it runs around in a panic. `freeze(seconds)`: holds its pose as a statue; hits do 1.5x damage; fire thaws it. `shock(seconds)`: twitching. `levitate(on)`: telekinesis holds it without counting as a grab.
+- `notice(kind)`: tells the mind about things that aren't hits (poke, pin, bomb nearby). Hits carry `source` (a tool or object kind), so reactions can be specific: shot, batted, stabbed, crushed by an anvil, blown up.
 
 ## Saving
 

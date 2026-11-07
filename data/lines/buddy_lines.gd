@@ -104,4 +104,72 @@ const LINES := {
 	&"cleaned": [
 		"Thanks for cleaning up. I guess.", "Ooh, sparkly.", "Was all that blood mine?",
 	],
+	# Tools.
+	&"poked": [
+		"Hey.", "Quit it.", "Boop yourself.", "What?", "Stop poking me!", "Do that again. I dare you.",
+	],
+	&"slapped": [
+		"OW! Did you just SLAP me?", "How DARE you!", "My cheek!", "Oh, it's ON now, pal.",
+		"Slap me again and see what happens. ...Nothing happens.", "Rude AND painful!",
+	],
+	&"tickled": [
+		"Hee hee! Stop! Haha!", "No-hoho-not there!", "Ahaha I'm gonna pee!", "Stoppit! Hahaha!",
+		"You monster! Hehehe!",
+	],
+	&"pinned": [
+		"Hey! I'm stuck!", "You nailed me to the WALL?!", "Ow, that's going through my arm!",
+		"Is this art now? Am I art?", "Unpin me, you psycho!",
+	],
+	&"lost_arm": [
+		"MY ARM! WHERE'S MY ARM?!", "I was using that!", "It's fine! It's fine! It's NOT fine!",
+		"Oh god, oh god, oh god!", "Give it back! GIVE IT BACK!",
+	],
+	&"lost_leg": [
+		"MY LEG!", "How am I supposed to walk now?!", "Holy shit, my leg!", "I'm gonna need a minute. And a leg.",
+	],
+	&"legless": [
+		"I can't get up! I literally can't!", "Little help? I'm short a couple legs.",
+		"Guess I live on the floor now.", "Respawn me. Please. I'm begging.",
+	],
+	&"on_fire": [
+		"FIRE! FIRE! FIIIRE!", "I'M ON FIRE!", "HOT HOT HOT HOT!", "Stop drop and- AAAH!",
+		"Somebody get a bucket!",
+	],
+	&"burned_out": [
+		"...Is it out? Is it out?", "I smell like a campfire.", "Crispy. I'm crispy now.",
+	],
+	&"frozen": [
+		"S-s-so c-cold...", "B-b-brrr!", "I c-can't feel my f-face!",
+	],
+	&"thawed": [
+		"Oh thank god, I can move!", "Brr. Never doing that again.", "Feeling's coming back. Ow, it tingles.",
+	],
+	&"shocked": [
+		"BZZZZZT!", "AAAGH! ELECTRICITY!", "I can taste purple!", "My hair! ...I still don't have hair.",
+	],
+	&"bomb_near": [
+		"Uh oh.", "Is that what I think it is?", "Nope nope nope nope.", "Put that DOWN!",
+		"Oh shit. Oh shit.", "That's a bomb. That is definitely a bomb.",
+	],
+	&"shot": [
+		"YOU SHOT ME!", "Ow! A gun?! Seriously?!", "That's gonna leave a hole!", "Bullets?! What the fuck?!",
+	],
+	&"batted": [
+		"Home run, asshole!", "OOF! My ribs!", "Batter up? BATTER DOWN!", "I'm not a piñata!",
+	],
+	&"stabbed": [
+		"You CUT me!", "Sharp! SHARP!", "Put the sword away, samurai!", "That's a real blade?!",
+	],
+	&"hit_anvil": [
+		"An ANVIL?! Who even owns an anvil?!", "Ow, my everything... flattened...", "Cartoon physics, my ass!",
+	],
+	&"blown_up": [
+		"KABOOM! I'm... alive?", "My ears are ringing!", "WHAT?! I CAN'T HEAR YOU!", "I'm toast. Burnt toast.",
+	],
+	&"sucked_in": [
+		"Whoa whoa whoa!", "I'm being spaghettified!", "Not the void! Anything but the void!",
+	],
+	&"levitated": [
+		"Whoa, I'm floating!", "Am I flying? Is this you?", "Put me down, Jedi!",
+	],
 }

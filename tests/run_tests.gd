@@ -8,6 +8,7 @@ const SUITES: Array[Script] = [
 	preload("res://tests/test_main.gd"),
 	preload("res://tests/test_buddy.gd"),
 	preload("res://tests/test_reactions.gd"),
+	preload("res://tests/test_tools.gd"),
 ]
 
 var _passed := 0

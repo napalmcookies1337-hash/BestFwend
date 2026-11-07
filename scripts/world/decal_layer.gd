@@ -5,13 +5,16 @@ extends Node2D
 ## draw. Only Clean Up wipes it.
 
 const SCALE := 2
-const BRUSH_SIZES := [2, 3, 4, 6, 8, 11, 14, 18, 24]
-const SHADES := [Color("8a0c1a"), Color("a3121f"), Color("6e0a15")]
+const BRUSH_SIZES := [2, 3, 4, 6, 8, 11, 14, 18, 24, 32, 44]
+const PALETTES := {
+	&"blood": [Color("8a0c1a"), Color("a3121f"), Color("6e0a15")],
+	&"soot": [Color(0.1, 0.08, 0.08, 0.75), Color(0.16, 0.13, 0.12, 0.6), Color(0.06, 0.05, 0.05, 0.85)],
+}
 
 var image: Image
 var texture: ImageTexture
-## Brushes by shade, then by size: soft-edged circles.
-var _brushes: Array = []
+## palette -> shade -> size: soft-edged circles.
+var _brushes: Dictionary = {}
 var _dirty := false
 var _rng := RandomNumberGenerator.new()
 
@@ -22,25 +25,42 @@ func _ready() -> void:
 	var size := Vector2i(Room.SIZE) / SCALE
 	image = Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
 	texture = ImageTexture.create_from_image(image)
-	for shade: Color in SHADES:
-		var brush_set: Array[Image] = []
-		for radius: int in BRUSH_SIZES:
-			brush_set.append(_make_brush(radius, shade))
-		_brushes.append(brush_set)
+	for palette: StringName in PALETTES:
+		var shades: Array = []
+		for shade: Color in PALETTES[palette]:
+			var brush_set: Array[Image] = []
+			for radius: int in BRUSH_SIZES:
+				brush_set.append(_make_brush(radius, shade))
+			shades.append(brush_set)
+		_brushes[palette] = shades
 
 
 ## A splat of roughly `radius` world pixels at `at`, with a few satellite drops.
 func splat(at: Vector2, radius: float) -> void:
-	_stamp(at, radius)
+	_stamp(at, radius, &"blood")
 	var satellites := _rng.randi_range(2, 5)
 	for _index in satellites:
 		var offset := Vector2.from_angle(_rng.randf() * TAU) * radius * _rng.randf_range(0.8, 1.8)
-		_stamp(at + offset, radius * _rng.randf_range(0.15, 0.4))
+		_stamp(at + offset, radius * _rng.randf_range(0.15, 0.4), &"blood")
 
 
 ## A single round drop.
 func drop(at: Vector2, radius: float) -> void:
-	_stamp(at, radius)
+	_stamp(at, radius, &"blood")
+
+
+## A blackened blast mark.
+func scorch(at: Vector2, radius: float) -> void:
+	_stamp(at, radius, &"soot")
+	for _index in 7:
+		var offset := Vector2.from_angle(_rng.randf() * TAU) * radius * _rng.randf_range(0.5, 1.3)
+		_stamp(at + offset, radius * _rng.randf_range(0.3, 0.6), &"soot")
+
+
+## A bullet hole.
+func hole(at: Vector2) -> void:
+	_stamp(at, 9.0, &"soot")
+	_stamp(at, 4.0, &"soot")
 
 
 func clear() -> void:
@@ -76,13 +96,14 @@ func _draw() -> void:
 	draw_texture_rect(texture, Rect2(Vector2.ZERO, Room.SIZE), false)
 
 
-func _stamp(at: Vector2, radius: float) -> void:
+func _stamp(at: Vector2, radius: float, palette: StringName) -> void:
 	var image_radius := radius / SCALE
 	var size_index := 0
 	for index in BRUSH_SIZES.size():
 		if BRUSH_SIZES[index] <= image_radius:
 			size_index = index
-	var brush: Image = _brushes[_rng.randi() % _brushes.size()][size_index]
+	var shades: Array = _brushes[palette]
+	var brush: Image = shades[_rng.randi() % shades.size()][size_index]
 	var center := Vector2i(at / SCALE)
 	var half := brush.get_width() / 2
 	image.blend_rect(brush, Rect2i(Vector2i.ZERO, brush.get_size()), center - Vector2i(half, half))

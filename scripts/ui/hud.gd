@@ -304,7 +304,7 @@ func _refresh_slots() -> void:
 	for index in slots.size():
 		var slot := slots[index]
 		var tool: ToolDef = tools[index] if index < tools.size() else null
-		var owned := tool != null and Game.profile.owned_tools.has(tool.id)
+		var owned := tool != null and Game.can_use_tool(tool.id)
 		if owned:
 			slot.setup(tool.id, index + 1, "%s\n%s" % [tool.display_name, tool.description])
 		else:

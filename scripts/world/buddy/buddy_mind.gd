@@ -14,7 +14,30 @@ const PRIORITY := {
 	&"hit_hard": 5, &"hit_head": 5, &"hit_object": 4, &"hit_ceiling": 4, &"survived": 2,
 	&"getting_up": 1, &"low_health": 2, &"revived": 5, &"healed": 2, &"idle": 0, &"bored": 0,
 	&"dizzy": 3, &"gravity_weird": 2, &"zero_g": 2, &"gravity_normal": 2, &"slowmo": 1,
-	&"cleaned": 1,
+	&"cleaned": 1, &"poked": 2, &"slapped": 4, &"tickled": 3, &"pinned": 3, &"lost_arm": 6,
+	&"lost_leg": 6, &"legless": 1, &"on_fire": 5, &"burned_out": 2, &"frozen": 4, &"thawed": 3,
+	&"shocked": 5, &"bomb_near": 3, &"shot": 5, &"batted": 5, &"stabbed": 5, &"hit_anvil": 5,
+	&"blown_up": 5, &"sucked_in": 4, &"levitated": 3,
+}
+## Hits from these sources get their own lines instead of the generic ones.
+const SOURCE_CONTEXT := {
+	&"pistol": &"shot", &"bat": &"batted", &"katana": &"stabbed", &"anvil": &"hit_anvil",
+	&"explosion": &"blown_up",
+}
+## Things that happen to it (Buddy.affected) and the line, sound and face they get.
+const AFFECTED := {
+	&"poke": [&"poked", 0.6, &"squeak", &"angry"],
+	&"slap": [&"slapped", 1.0, &"yelp", &"angry"],
+	&"tickle": [&"tickled", 0.4, &"giggle", &"laugh"],
+	&"pinned": [&"pinned", 1.0, &"yelp", &"grabbed"],
+	&"ignited": [&"on_fire", 1.0, &"scream", &""],
+	&"burned_out": [&"burned_out", 1.0, &"", &"groggy"],
+	&"frozen": [&"frozen", 1.0, &"", &""],
+	&"thawed": [&"thawed", 1.0, &"", &"groggy"],
+	&"shocked": [&"shocked", 1.0, &"scream", &""],
+	&"bomb_near": [&"bomb_near", 0.9, &"squeak", &"grabbed"],
+	&"black_hole": [&"sucked_in", 1.0, &"scream", &""],
+	&"levitated": [&"levitated", 0.8, &"squeak", &"grabbed"],
 }
 const CHATTY := 3
 ## Seconds before the same situation can speak again.
@@ -22,7 +45,9 @@ const COOLDOWN := {
 	&"grabbed": 2.5, &"grabbed_head": 2.5, &"grabbed_limb": 2.5, &"hit_light": 2.0,
 	&"thrown": 1.0, &"hit_medium": 1.2, &"hit_hard": 0.8, &"hit_head": 1.0, &"hit_object": 1.0,
 	&"dangling": 8.0, &"upside_down": 6.0, &"survived": 5.0, &"low_health": 10.0, &"idle": 0.0,
-	&"bored": 0.0, &"dizzy": 6.0,
+	&"bored": 0.0, &"dizzy": 6.0, &"poked": 2.0, &"slapped": 1.0, &"tickled": 2.5, &"on_fire": 2.2,
+	&"shot": 1.0, &"batted": 1.0, &"stabbed": 1.0, &"lost_arm": 0.0, &"lost_leg": 0.0, &"legless": 12.0,
+	&"bomb_near": 3.0, &"blown_up": 1.0,
 }
 const DEFAULT_COOLDOWN := 4.0
 const GAP := 1.2
@@ -63,6 +88,8 @@ func _ready() -> void:
 	buddy.released.connect(_on_released)
 	buddy.knocked_out.connect(_on_knocked_out)
 	buddy.revived.connect(_on_revived)
+	buddy.affected.connect(_on_affected)
+	buddy.limb_lost.connect(_on_limb_lost)
 	Events.gravity_changed.connect(_on_gravity_changed)
 	Events.slowmo_changed.connect(_on_slowmo_changed)
 	Events.room_cleaned.connect(_on_room_cleaned)
@@ -117,6 +144,12 @@ func _physics_process(delta: float) -> void:
 		_last_state = state
 		return
 	untouched += delta
+	if buddy.burn_time > 0.0:
+		untouched = 0.0
+		say(&"on_fire")
+	if not buddy.parts.has(&"leg_l") or not buddy.parts.has(&"leg_r"):
+		if state == Buddy.State.RAGDOLL and untouched > 6.0:
+			say(&"legless")
 	_track_flight(delta, state)
 	_track_spin(delta)
 	_track_held(delta, state)
@@ -208,8 +241,12 @@ func _on_hit(info: Dictionary) -> void:
 	var damage: float = info.get("damage", 0.0)
 	var part: StringName = info["part"]
 	var source: StringName = info.get("source", &"wall")
+	if info.get("quiet", false):
+		return
 	var loudness := clampf(remap(force, 300.0, 4000.0, -14.0, 0.0), -14.0, 2.0)
-	if force >= 2500.0:
+	if force < 300.0:
+		pass
+	elif force >= 2500.0:
 		Sfx.play(&"crunch", loudness)
 	elif force >= 1200.0:
 		Sfx.play(&"smack", loudness)
@@ -221,7 +258,13 @@ func _on_hit(info: Dictionary) -> void:
 		return
 	var position: Vector2 = info.get("position", buddy.torso.global_position)
 	var context := &""
-	if source == &"object" and force > 700.0:
+	if info.has("severed"):
+		return
+	if SOURCE_CONTEXT.has(source) and (damage > 0.0 or force > 700.0):
+		context = SOURCE_CONTEXT[source]
+	elif source in [&"slap", &"lightning", &"fire", &"black_hole"]:
+		return
+	elif source != &"wall" and force > 700.0:
 		context = &"hit_object"
 	elif part == &"head" and damage > 3.0:
 		context = &"hit_head"
@@ -243,6 +286,32 @@ func _on_hit(info: Dictionary) -> void:
 		Sfx.play(&"squeak", -6.0, buddy.voice_pitch)
 	if say(context, 0.4 if context == &"hit_light" else 1.0) and damage > 2.0:
 		buddy.show_face(&"angry", 1.8)
+
+
+func _on_affected(kind: StringName) -> void:
+	untouched = 0.0
+	if buddy.is_knocked_out or not AFFECTED.has(kind):
+		return
+	var reaction: Array = AFFECTED[kind]
+	var context: StringName = reaction[0]
+	if kind == &"frozen":
+		# Say it first, then the ice stops the jaw.
+		buddy.bubble.silence()
+	var spoke := say(context, reaction[1])
+	if reaction[2] != &"" and (spoke or kind == &"tickle"):
+		Sfx.play(reaction[2], -4.0, buddy.voice_pitch)
+	if reaction[3] != &"":
+		buddy.show_face(reaction[3], 1.2)
+
+
+func _on_limb_lost(limb: StringName, _part: BuddyPart) -> void:
+	untouched = 0.0
+	if buddy.is_knocked_out:
+		return
+	Sfx.play(&"scream", -3.0, buddy.voice_pitch * 1.1)
+	_cooldowns.erase(&"lost_arm")
+	_cooldowns.erase(&"lost_leg")
+	say(&"lost_arm" if String(limb).begins_with("arm") else &"lost_leg")
 
 
 func _on_grabbed(part: StringName) -> void:

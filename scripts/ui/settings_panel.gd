@@ -9,7 +9,7 @@ const VOLUMES := {
 }
 
 var sliders: Dictionary = {}
-var fullscreen_toggle: CheckButton
+var fullscreen_toggle: Button
 var reset_dialog: ConfirmationDialog
 
 
@@ -37,9 +37,10 @@ func _ready() -> void:
 		box.add_child(slider)
 		sliders[key] = slider
 
-	fullscreen_toggle = CheckButton.new()
-	fullscreen_toggle.text = "Fullscreen  [F11]"
+	fullscreen_toggle = Button.new()
+	fullscreen_toggle.toggle_mode = true
 	fullscreen_toggle.focus_mode = Control.FOCUS_NONE
+	fullscreen_toggle.toggled.connect(func(_on: bool) -> void: _show_fullscreen_text())
 	fullscreen_toggle.toggled.connect(func(on: bool) -> void: Game.set_setting("fullscreen", on))
 	box.add_child(fullscreen_toggle)
 
@@ -73,16 +74,27 @@ func _ready() -> void:
 	visibility_changed.connect(_on_visibility_changed)
 	Events.settings_changed.connect(_refresh)
 	_refresh()
-	set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+	# Anchored at the center and growing both ways, so it stays centered at any size.
+	set_anchors_preset(Control.PRESET_CENTER)
+	offset_left = 0
+	offset_right = 0
+	offset_top = 0
+	offset_bottom = 0
+	grow_horizontal = Control.GROW_DIRECTION_BOTH
+	grow_vertical = Control.GROW_DIRECTION_BOTH
 
 
 func _on_visibility_changed() -> void:
 	if visible:
 		_refresh()
-		set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
 
 
 func _refresh() -> void:
 	for key: String in sliders:
 		(sliders[key] as HSlider).set_value_no_signal(Game.profile.settings[key])
 	fullscreen_toggle.set_pressed_no_signal(Game.profile.settings["fullscreen"])
+	_show_fullscreen_text()
+
+
+func _show_fullscreen_text() -> void:
+	fullscreen_toggle.text = "Fullscreen: %s  [F11]" % ("On" if fullscreen_toggle.button_pressed else "Off")

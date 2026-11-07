@@ -41,14 +41,6 @@ static func build() -> Theme:
 	theme.set_color("font_disabled_color", "Button", MUTED.darkened(0.3))
 
 	theme.set_color("font_color", "Label", TEXT)
-	theme.set_color("font_color", "CheckButton", TEXT)
-	theme.set_color("font_hover_color", "CheckButton", TEXT)
-	theme.set_color("font_pressed_color", "CheckButton", TEXT)
-	theme.set_color("font_hover_pressed_color", "CheckButton", TEXT)
-	theme.set_stylebox("normal", "CheckButton", StyleBoxEmpty.new())
-	theme.set_stylebox("hover", "CheckButton", StyleBoxEmpty.new())
-	theme.set_stylebox("pressed", "CheckButton", StyleBoxEmpty.new())
-	theme.set_stylebox("hover_pressed", "CheckButton", StyleBoxEmpty.new())
 
 	var track := box(INK, PANEL_EDGE, 2, 8)
 	track.content_margin_top = 6

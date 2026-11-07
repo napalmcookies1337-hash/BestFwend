@@ -14,6 +14,9 @@ signal buddy_limb_lost(limb: StringName)
 signal buddy_knocked_out
 signal buddy_revived
 signal buddy_respawned
+signal buddy_health_changed(health: float, max_health: float, knocked_out: bool)
+## The Buddy said something. context is the reaction that picked the line.
+signal buddy_spoke(text: String, context: StringName)
 
 # Tools.
 signal tool_selected(tool_id: StringName)

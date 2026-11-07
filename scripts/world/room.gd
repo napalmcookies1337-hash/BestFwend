@@ -24,7 +24,7 @@ const BACKGROUNDS := {
 }
 
 var background_id := "bedroom"
-var decals: Node2D
+var decals: DecalLayer
 var walls: StaticBody2D
 
 
@@ -44,8 +44,7 @@ func _ready() -> void:
 	_add_wall("Ceiling", Rect2(-WALL_THICKNESS, -WALL_THICKNESS, SIZE.x + WALL_THICKNESS * 2, WALL_THICKNESS))
 	_add_wall("LeftWall", Rect2(-WALL_THICKNESS, -half, WALL_THICKNESS, SIZE.y + WALL_THICKNESS))
 	_add_wall("RightWall", Rect2(SIZE.x, -half, WALL_THICKNESS, SIZE.y + WALL_THICKNESS))
-	decals = Node2D.new()
-	decals.name = "Decals"
+	decals = DecalLayer.new()
 	add_child(decals)
 	set_background(Game.profile.background)
 
@@ -66,8 +65,7 @@ func set_background(id: String) -> void:
 
 
 func clear_decals() -> void:
-	for child in decals.get_children():
-		child.queue_free()
+	decals.clear()
 
 
 func _add_wall(wall_name: String, rect: Rect2) -> void:

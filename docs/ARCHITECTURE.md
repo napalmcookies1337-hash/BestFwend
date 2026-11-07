@@ -26,6 +26,7 @@ Dependencies point one way: `ui` and `world` may use `core` and `data`; `core` u
 |---|---|
 | `Events` | Global signal bus. Holds no state. |
 | `Game` | The player's `Profile` and its save file: load at start, autosave every 30 s when something changed, save on quit. The only place $$$ is earned or spent. Applies settings to audio and the window. |
+| `Sfx` | Synthesized sounds and the player pool. |
 
 Don't add an autoload for a feature. New systems (economy, achievements) become plain objects owned by `Game` or the sandbox, so tests can build them on their own.
 
@@ -97,6 +98,30 @@ The original file is kept once as `pre_v<N>.json`. Adding a new key read with a 
 - **Impacts:** `BuddyPart._integrate_forces` measures how much a contact changed the part's velocity, counting only changes that push back against how fast the surfaces were closing (Godot's reported 2D contact impulses are unreliable). That drives squash and `Events.buddy_hit` (`force` is in px/s of velocity change; a hard wall slam is 2,000-5,000).
 - **Drawing:** [buddy_view.gd](../scripts/world/buddy/buddy_view.gd) draws all parts from their transforms: head and torso outlines first so they read as one blob, limbs shifted onto their joints so brief stretch never shows a gap, squash along the last impact or stretch along motion, and a face with expressions picked from state.
 - **Lost:** a part outside the room or a NaN position emits `lost`, and the sandbox respawns it.
+
+### Health and hits
+
+**Everything that hurts the Buddy calls `buddy.take_hit(info)`**: wall impacts today, tools in Milestone 4. It works out damage from `force` (or takes an explicit `damage`), leaves a bruise or blood mark on the part, knocks a standing Buddy over, lowers health, and emits the local `hit_taken` and global `Events.buddy_hit`.
+
+- Damage starts at 1,400 px/s of velocity change (a fall from standing height doesn't hurt) at 0.013 per px/s, times the part's multiplier (head 1.5, limbs 0.6-0.7). A 3,000 slam does about 20.
+- At 0 health it's knocked out: limp, silent, X eyes and stars. It revives after 6 s, or when clicked (a grab released within 0.25 s without moving), with 35 health. It heals 4/s after 4 s without damage.
+- `Events.buddy_health_changed` drives the HUD bar.
+
+### Personality
+
+- [buddy_mind.gd](../scripts/world/buddy/buddy_mind.gd) picks reactions from context: hit strength, part and source, being grabbed (and by what), dangling, upside down, thrown, landing after flight, spinning (dizzy), getting up hurt, healing, idle time, gravity, slow-mo and cleaning. There's no mood meter (a design decision).
+- Each situation has a priority (higher interrupts lower), a cooldown, and lines that don't repeat back to back. Lines live in [buddy_lines.gd](../data/lines/buddy_lines.gd); every situation in `BuddyMind.PRIORITY` must have lines (a test checks).
+- [speech_bubble.gd](../scripts/world/buddy/speech_bubble.gd) types lines out with babble blips, follows the head and stays on screen.
+- Faces: `BuddyView.pick_expression()` goes KO > ouch (recent hit) > the mind's `show_face()` > grabbed > scream (flying) > groggy (getting up or low health) > happy.
+- Idle bits (`play_idle`: tap foot, look around, yawn) only run while standing still.
+
+## Sound
+
+`Sfx` (autoload) synthesizes every sound at startup with [synth.gd](../scripts/audio/synth.gd): voiced tones with vowel colour for babble, squeaks, yelps, grunts, screams, and filtered noise for thuds and splats. No audio files. `Sfx.play(name, volume_db, pitch)` and `Sfx.babble(pitch)` use a pool of players on the SFX bus. Music is still to come.
+
+## Blood
+
+`Blood` listens for damaging hits: it splats the impact point and throws droplets that fly under the current gravity and stain where they land. Stains go into `DecalLayer`, one half-resolution image drawn over the room background, so they cost nothing to keep. Clean Up wipes stains and flying drops; skin marks stay until respawn.
 
 ## The Hand
 

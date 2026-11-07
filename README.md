@@ -5,7 +5,9 @@ A physics buddy sandbox: fling, smash and blow up your round blob fwend to earn 
 - [DESIGN.md](DESIGN.md): the approved game design brief.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the code is organized, and the rules for adding to it.
 
-Current state: Milestone 2. Your fwend lives in the room: grab any part, drag, fling it into walls, watch it squash, get back up and waddle around. Slow-mo, gravity in any direction, settings and saving work. Tools, reactions and $$$ earning come next.
+Current state: Milestone 3. Your fwend lives in the room: grab any part, drag, fling it into walls, watch it squash, bleed, swear, get knocked out and get back up. It talks in speech bubbles with a babble voice, reacts to what you do and fidgets when left alone. Tools and $$$ earning come next.
+
+The Buddy's lines are in [data/lines/buddy_lines.gd](data/lines/buddy_lines.gd). Edit them freely.
 
 ## Run the game
 

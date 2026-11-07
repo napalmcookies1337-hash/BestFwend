@@ -14,6 +14,7 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 
 Events="*res://scripts/core/events.gd"
 Game="*res://scripts/core/game.gd"
+Sfx="*res://scripts/audio/sfx.gd"
 
 [display]
 

@@ -14,6 +14,7 @@ const MUTED := Color("a59cb9")
 const ACCENT := Color("ffa646")
 const MONEY := Color("8ef08c")
 const DANGER := Color("ff5d6c")
+const HEALTH := Color("ff8fb1")
 
 const FONT_SIZE := 26
 const RADIUS := 14

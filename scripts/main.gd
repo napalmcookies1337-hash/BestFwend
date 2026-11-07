@@ -10,6 +10,7 @@ const DEBRIS_GROUP := &"debris"
 var room: Room
 var world: Node2D
 var buddy: Buddy
+var blood: Blood
 var grabber: Grabber
 var hud: Hud
 var slowmo := false
@@ -22,6 +23,10 @@ func _ready() -> void:
 	world = Node2D.new()
 	world.name = "World"
 	add_child(world)
+	blood = Blood.new()
+	blood.decals = room.decals
+	blood.bounds = room.interior()
+	add_child(blood)
 	grabber = Grabber.new()
 	grabber.name = "Grabber"
 	grabber.bounds = room.interior()
@@ -93,12 +98,13 @@ func respawn() -> void:
 			grabber.forget()
 		buddy.queue_free()
 		buddy = null
-	_spawn_buddy()
+	_spawn_buddy(true)
 	Events.buddy_respawned.emit()
 
 
 func clean_up() -> void:
 	room.clear_decals()
+	blood.clear()
 	for node in get_tree().get_nodes_in_group(DEBRIS_GROUP):
 		if node == grabber.held:
 			grabber.forget()
@@ -114,10 +120,12 @@ func spawn_test_ball(at: Vector2) -> TestBall:
 	return ball
 
 
-func _spawn_buddy() -> void:
+func _spawn_buddy(respawned := false) -> void:
 	buddy = Buddy.new()
 	buddy.bounds = room.interior()
 	buddy.build(room.spawn_point(), Color(Game.profile.buddy_color))
+	if respawned:
+		buddy.set_meta(&"respawned", true)
 	buddy.lost.connect(_on_buddy_lost)
 	world.add_child(buddy)
 

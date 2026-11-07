@@ -28,7 +28,26 @@ var squash := 0.0
 var squash_velocity := 0.0
 ## World angle of the last impact's normal.
 var squash_axis := 0.0
+## Bruises and blood on the skin, until respawn: [local position, radius, is_blood].
+var marks: Array = []
 var _velocity_before_step := Vector2.ZERO
+
+const MAX_MARKS := 10
+
+
+## Leaves a bruise, or blood for a bad hit, near `local` on this part's skin.
+func add_mark(local: Vector2, is_blood: bool, damage: float) -> void:
+	var mark_radius := clampf(4.0 + damage * 0.6, 5.0, radius * 0.45)
+	var reach := maxf(radius - mark_radius - 2.0, 0.0)
+	var spot := local
+	if kind == Kind.CIRCLE:
+		spot = local.limit_length(reach)
+	else:
+		var half := maxf(length / 2.0 - radius, 0.0)
+		spot = Vector2(clampf(local.x, -reach, reach), clampf(local.y, -half - reach * 0.5, half + reach * 0.5))
+	marks.append([spot, mark_radius, is_blood])
+	if marks.size() > MAX_MARKS:
+		marks.pop_front()
 
 
 func setup(id: StringName, part_kind: Kind, part_radius: float, part_length: float, part_mass: float, priority: int) -> void:

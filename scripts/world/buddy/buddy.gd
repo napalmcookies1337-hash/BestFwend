@@ -1,13 +1,23 @@
 ﻿class_name Buddy
 extends Node2D
 ## The fwend: six jointed rigid parts, a motor that gets it up, balances it and
-## waddles it around, and a view that draws it. Keep this node at the origin;
-## the parts move, not the Buddy.
+## waddles it around, health, and the view, mind and speech bubble that give it a
+## personality. Keep this node at the origin; the parts move, not the Buddy.
 ##
 ## "Up" is always against gravity, so it stands on whichever wall gravity points at.
+##
+## Anything that hurts the Buddy (walls today, tools in Milestone 4) goes through
+## take_hit(), which handles damage, bruises, knockdowns and the hit event.
 
 ## Flew out of the room or the simulation broke. The sandbox respawns it.
 signal lost
+## Local signals for this Buddy's own mind. Global listeners use Events.
+signal hit_taken(info: Dictionary)
+signal grabbed(part: StringName)
+signal released(velocity: Vector2)
+signal clicked(part: StringName)
+signal knocked_out
+signal revived
 
 enum State { RAGDOLL, GETTING_UP, STANDING, GRABBED }
 
@@ -69,6 +79,8 @@ const KNOCKDOWN_DV := 520.0
 
 # Wandering.
 const WALK_SPEED := 150.0
+## At zero health it limps along at this fraction of full speed.
+const HURT_WALK_FACTOR := 0.45
 const WALK_GAIN := 8.0
 const STEP_RATE := 10.0
 const LEG_SWING := 0.4
@@ -80,11 +92,23 @@ const IDLE_MIN := 1.5
 const IDLE_MAX := 4.5
 const WANDER_MARGIN := 150.0
 
-# Reporting hits.
+# Hits and health.
 const HIT_EVENT_DV := 320.0
 const HIT_COOLDOWN := 0.15
 const HURT_DV := 750.0
 const HURT_TIME := 0.7
+const MAX_HEALTH := 100.0
+## Hits gentler than this (px/s of velocity change) do no damage.
+## (A fall from standing height or the spawn drop lands at about 1,000-1,300.)
+const DAMAGE_START_DV := 1400.0
+const DAMAGE_PER_DV := 0.013
+const PART_DAMAGE := {&"head": 1.5, &"torso": 1.0, &"arm_l": 0.6, &"arm_r": 0.6, &"leg_l": 0.7, &"leg_r": 0.7}
+## Hits this damaging leave blood on the skin rather than a bruise.
+const BLEED_DAMAGE := 6.0
+const REVIVE_TIME := 6.0
+const REVIVE_HEALTH := 35.0
+const HEAL_DELAY := 4.0
+const HEAL_RATE := 4.0
 
 var state := State.RAGDOLL
 var parts: Dictionary = {}
@@ -96,10 +120,16 @@ var total_mass := 0.0
 ## The room interior, for wandering and the lost check.
 var bounds := Rect2(0, 0, 1920, 880)
 var color := Color("ffa646")
+## Babble pitch. Skins may change it later.
+var voice_pitch := 1.0
 ## Where the eyes look, in world space.
 var look_target := Vector2.ZERO
 var view: BuddyView
+var mind: BuddyMind
+var bubble: SpeechBubble
 
+var health := MAX_HEALTH
+var is_knocked_out := false
 var ground_hit := false
 var ground_distance := INF
 var stand_strength := 0.0
@@ -107,6 +137,12 @@ var walk_direction := 0.0
 var walk_phase := 0.0
 var hurt_time := 0.0
 var held_part: StringName = &""
+## A face the mind asked for, shown for face_time seconds.
+var face_override: StringName = &""
+var face_time := 0.0
+## A little idle animation while standing still: &"tap_foot", &"look_around", &"yawn".
+var idle_action: StringName = &""
+var idle_action_time := 0.0
 
 var _rng := RandomNumberGenerator.new()
 var _calm_time := 0.0
@@ -115,6 +151,9 @@ var _airborne_time := 0.0
 var _idle_time := 0.0
 var _walk_target := Vector2.ZERO
 var _walk_time := 0.0
+var _ko_time := 0.0
+var _since_damage := 0.0
+var _idle_phase := 0.0
 var _hit_cooldowns: Dictionary = {}
 ## [part a, local anchor on a, part b, local anchor on b] per joint, to measure stretch.
 var _anchors: Array = []
@@ -160,6 +199,12 @@ func build(at: Vector2, body_color: Color, rng_seed: int = 0) -> void:
 	view = BuddyView.new()
 	view.buddy = self
 	add_child(view)
+	bubble = SpeechBubble.new()
+	bubble.buddy = self
+	add_child(bubble)
+	mind = BuddyMind.new()
+	mind.buddy = self
+	add_child(mind)
 	look_target = at + Vector2(0, 200)
 	_idle_time = _rng.randf_range(IDLE_MIN, IDLE_MAX)
 
@@ -170,6 +215,7 @@ func _ready() -> void:
 		excluded.append(part.get_rid())
 	_probe.exclude = excluded
 	_probe.collision_mask = Layers.GROUND
+	_announce_health()
 
 
 func gravity() -> Vector2:
@@ -181,6 +227,19 @@ func gravity() -> Vector2:
 
 func is_walking() -> bool:
 	return state == State.STANDING and walk_direction != 0.0
+
+
+func is_standing_still() -> bool:
+	return state == State.STANDING and walk_direction == 0.0
+
+
+## True when no part touches anything and the ground ray finds nothing.
+func is_airborne() -> bool:
+	return not ground_hit and not _touching_anything()
+
+
+func tilt() -> float:
+	return _tilt(gravity())
 
 
 ## How far a limb has drifted from its joint on the torso. The view draws limbs
@@ -204,14 +263,86 @@ func joint_stretch() -> float:
 	return worst
 
 
+## Damage a hit of `force` (px/s of velocity change) does to `part`.
+static func damage_for(part: StringName, force: float) -> float:
+	return maxf(force - DAMAGE_START_DV, 0.0) * DAMAGE_PER_DV * float(PART_DAMAGE.get(part, 1.0))
+
+
+## The one entry point for anything that hurts the Buddy. info keys: "part" (required),
+## "force", "source", "normal", "position", and optionally "damage" to override the
+## force-based amount. Returns the info as reported, with "damage" filled in.
+func take_hit(info: Dictionary) -> Dictionary:
+	var part_name: StringName = info["part"]
+	var part: BuddyPart = parts.get(part_name)
+	var force: float = info.get("force", 0.0)
+	if not info.has("damage"):
+		info["damage"] = damage_for(part_name, force)
+	info["knocked_out"] = is_knocked_out
+	var damage: float = info["damage"]
+	if force >= KNOCKDOWN_DV and (state == State.STANDING or state == State.GETTING_UP):
+		_set_state(State.RAGDOLL)
+	if force >= HURT_DV or damage > 0.0:
+		hurt_time = HURT_TIME
+	if damage > 0.0:
+		_since_damage = 0.0
+		if part != null and info.has("position"):
+			part.add_mark(part.to_local(info["position"]), damage >= BLEED_DAMAGE, damage)
+		if not is_knocked_out:
+			_set_health(health - damage)
+			if health <= 0.0:
+				_knock_out()
+	hit_taken.emit(info)
+	Events.buddy_hit.emit(info)
+	return info
+
+
 func on_grabbed(part: BuddyPart) -> void:
 	held_part = part.part_name
+	idle_action = &""
 	_set_state(State.GRABBED)
+	grabbed.emit(part.part_name)
 
 
-func on_released() -> void:
+func on_released(velocity: Vector2 = Vector2.ZERO) -> void:
 	held_part = &""
 	_set_state(State.RAGDOLL)
+	released.emit(velocity)
+
+
+## A quick click on a part, as opposed to a drag. Wakes a knocked-out Buddy.
+func on_clicked(part: StringName) -> void:
+	clicked.emit(part)
+	if is_knocked_out:
+		revive()
+
+
+func revive() -> void:
+	if not is_knocked_out:
+		return
+	is_knocked_out = false
+	_ko_time = 0.0
+	_since_damage = 0.0
+	_set_health(REVIVE_HEALTH)
+	revived.emit()
+	Events.buddy_revived.emit()
+
+
+## Shows `expression` for `seconds`, over the face the state would pick.
+func show_face(expression: StringName, seconds: float) -> void:
+	face_override = expression
+	face_time = seconds
+
+
+## Plays a small idle animation if it's standing still.
+func play_idle(action: StringName, seconds: float) -> bool:
+	if not is_standing_still():
+		return false
+	idle_action = action
+	idle_action_time = seconds
+	_idle_phase = 0.0
+	# Hold still while it plays.
+	_idle_time = maxf(_idle_time, seconds)
+	return true
 
 
 ## For tests and debugging: puts every part's velocity to `velocity`.
@@ -229,8 +360,15 @@ func _physics_process(delta: float) -> void:
 		return
 	_state_time += delta
 	hurt_time = maxf(hurt_time - delta, 0.0)
+	face_time = maxf(face_time - delta, 0.0)
+	if face_time == 0.0:
+		face_override = &""
+	idle_action_time = maxf(idle_action_time - delta, 0.0)
+	if idle_action_time == 0.0 or not is_standing_still():
+		idle_action = &""
 	for key: StringName in _hit_cooldowns.keys():
 		_hit_cooldowns[key] = maxf(_hit_cooldowns[key] - delta, 0.0)
+	_heal(delta)
 	_cap_speeds()
 	_enforce_limits()
 	var g := gravity()
@@ -252,6 +390,37 @@ func _physics_process(delta: float) -> void:
 			_check_fall(delta, g)
 		State.GRABBED:
 			pass
+
+
+func _heal(delta: float) -> void:
+	if is_knocked_out:
+		return
+	_since_damage += delta
+	if _since_damage >= HEAL_DELAY and health < MAX_HEALTH:
+		_set_health(minf(health + HEAL_RATE * delta, MAX_HEALTH))
+
+
+func _knock_out() -> void:
+	is_knocked_out = true
+	_ko_time = 0.0
+	idle_action = &""
+	if state != State.GRABBED:
+		_set_state(State.RAGDOLL)
+	_announce_health()
+	knocked_out.emit()
+	Events.buddy_knocked_out.emit()
+
+
+func _set_health(value: float) -> void:
+	var old := health
+	health = clampf(value, 0.0, MAX_HEALTH)
+	# Healing ticks every step; only announce whole-point changes and the ends.
+	if int(old) != int(health) or health == 0.0 or health == MAX_HEALTH:
+		_announce_health()
+
+
+func _announce_health() -> void:
+	Events.buddy_health_changed.emit(health, MAX_HEALTH, is_knocked_out)
 
 
 func _enforce_limits() -> void:
@@ -281,7 +450,12 @@ func _update_ragdoll(delta: float, g: Vector2) -> void:
 		if part.get_contact_count() > 0:
 			part.angular_velocity *= maxf(1.0 - GROUND_SPIN_DRAG * delta, 0.0)
 			part.linear_velocity *= maxf(1.0 - GROUND_SLIDE_DRAG * delta, 0.0)
-	var calm :=torso.linear_velocity.length() < CALM_SPEED and absf(torso.angular_velocity) < CALM_SPIN
+	if is_knocked_out:
+		_ko_time += delta
+		if _ko_time >= REVIVE_TIME:
+			revive()
+		return
+	var calm := torso.linear_velocity.length() < CALM_SPEED and absf(torso.angular_velocity) < CALM_SPIN
 	var grounded := ground_hit or ground_distance < NEAR_GROUND or _touching_anything()
 	if calm and grounded and g.length() >= MIN_GRAVITY_TO_STAND:
 		_calm_time += delta
@@ -304,7 +478,8 @@ func _balance(delta: float, g: Vector2) -> void:
 		accel = clampf(accel, 0.0, g.length() * 3.0)
 		torso.apply_central_force(up * accel * total_mass * s)
 
-	var desired_side := walk_direction * WALK_SPEED
+	var speed := WALK_SPEED * lerpf(HURT_WALK_FACTOR, 1.0, health / MAX_HEALTH)
+	var desired_side := walk_direction * speed
 	var side_speed := torso.linear_velocity.dot(side)
 	if ground_hit:
 		torso.apply_central_force(side * (desired_side - side_speed) * WALK_GAIN * total_mass * s)
@@ -312,15 +487,25 @@ func _balance(delta: float, g: Vector2) -> void:
 	var swing := 0.0
 	var waddle := 0.0
 	if is_walking():
-		walk_phase += delta * STEP_RATE
+		walk_phase += delta * STEP_RATE * speed / WALK_SPEED
 		swing = sin(walk_phase) * LEG_SWING
 		waddle = sin(walk_phase) * WADDLE
 	else:
 		walk_phase = 0.0
+	var head_offset := -waddle * 0.6
+	var tap := 0.0
+	_idle_phase += delta
+	match idle_action:
+		&"tap_foot":
+			tap = maxf(sin(_idle_phase * 14.0), 0.0) * 0.35
+		&"look_around":
+			head_offset += sin(_idle_phase * 2.2) * 0.4
+		&"yawn":
+			head_offset -= minf(_idle_phase * 1.5, 1.0) * 0.3
 	_steer(torso, upright + waddle, s, delta)
-	_steer(head, upright - waddle * 0.6, s * 0.8, delta)
+	_steer(head, upright + head_offset, s * 0.8, delta)
 	_steer(parts[&"leg_l"], upright + swing, s, delta)
-	_steer(parts[&"leg_r"], upright - swing, s, delta)
+	_steer(parts[&"leg_r"], upright - swing - tap, s, delta)
 
 
 func _steer(part: BuddyPart, target_angle: float, strength: float, delta: float) -> void:
@@ -335,7 +520,7 @@ func _update_wander(delta: float, g: Vector2) -> void:
 	var side := Vector2(-up.y, up.x)
 	if walk_direction == 0.0:
 		_idle_time -= delta
-		if _idle_time <= 0.0:
+		if _idle_time <= 0.0 and idle_action == &"":
 			_pick_walk_target(side)
 		return
 	_walk_time += delta
@@ -406,6 +591,7 @@ func _set_state(new_state: State) -> void:
 	_calm_time = 0.0
 	_airborne_time = 0.0
 	walk_direction = 0.0
+	idle_action = &""
 	if new_state == State.RAGDOLL or new_state == State.GRABBED:
 		stand_strength = 0.0
 	if new_state == State.GETTING_UP:
@@ -433,19 +619,13 @@ func _is_intact() -> bool:
 func _on_part_impacted(part: BuddyPart, delta_v: float, normal: Vector2, at: Vector2, collider: Object) -> void:
 	if delta_v >= KNOCKDOWN_DV and (state == State.STANDING or state == State.GETTING_UP):
 		_set_state(State.RAGDOLL)
-	if delta_v >= HURT_DV:
-		hurt_time = HURT_TIME
 	if delta_v < HIT_EVENT_DV or _hit_cooldowns.get(part.part_name, 0.0) > 0.0:
 		return
 	_hit_cooldowns[part.part_name] = HIT_COOLDOWN
-	var source := &"object"
-	if collider is StaticBody2D:
-		source = &"wall"
-	Events.buddy_hit.emit({
+	take_hit({
 		"part": part.part_name,
 		"force": delta_v,
 		"normal": normal,
-		"source": source,
-		"damage": 0.0,
+		"source": &"wall" if collider is StaticBody2D else &"object",
 		"position": at,
 	})

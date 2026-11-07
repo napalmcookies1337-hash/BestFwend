@@ -18,6 +18,9 @@ const SPIN_DAMPING := 3.0
 const MAX_THROW_SPEED := 5200.0
 const THROW_BOOST := 1.1
 const TARGET_MARGIN := 30.0
+## A grab released this quickly, without moving the cursor, counts as a click.
+const CLICK_TIME := 0.25
+const CLICK_DRIFT := 14.0
 
 ## The room interior. The cursor target is kept inside it.
 var bounds := Rect2(0, 0, 1920, 880)
@@ -30,6 +33,9 @@ var target_velocity := Vector2.ZERO
 ## Tests steer the target directly instead of following the mouse.
 var manual_target := false
 var _last_target := Vector2.ZERO
+var _press_point := Vector2.ZERO
+var _held_time := 0.0
+var _drift := 0.0
 var _query := PhysicsShapeQueryParameters2D.new()
 
 
@@ -88,6 +94,9 @@ func grab_at(at: Vector2) -> bool:
 	held_offset = body.to_local(at)
 	target = at
 	_last_target = at
+	_press_point = at
+	_held_time = 0.0
+	_drift = 0.0
 	target_velocity = Vector2.ZERO
 	held_buddy = body.get_parent() as Buddy if body is BuddyPart else null
 	if held_buddy != null:
@@ -104,8 +113,11 @@ func release() -> void:
 		for body: RigidBody2D in bodies:
 			body.linear_velocity = (body.linear_velocity * THROW_BOOST).limit_length(MAX_THROW_SPEED)
 		if is_instance_valid(held_buddy):
-			held_buddy.on_released()
-			Events.buddy_released.emit((held as BuddyPart).part_name, held.linear_velocity)
+			var part_name := (held as BuddyPart).part_name
+			held_buddy.on_released(held.linear_velocity)
+			Events.buddy_released.emit(part_name, held.linear_velocity)
+			if _held_time <= CLICK_TIME and _drift <= CLICK_DRIFT:
+				held_buddy.on_clicked(part_name)
 	held = null
 	held_buddy = null
 	held_button = MOUSE_BUTTON_NONE
@@ -141,6 +153,8 @@ func _physics_process(delta: float) -> void:
 	target = target.clamp(bounds.position + Vector2.ONE * TARGET_MARGIN, bounds.end - Vector2.ONE * TARGET_MARGIN)
 	target_velocity = target_velocity.lerp((target - _last_target) / delta, 0.5)
 	_last_target = target
+	_held_time += delta
+	_drift = maxf(_drift, target.distance_to(_press_point))
 
 	var point := held.to_global(held_offset)
 	var lever := point - held.global_position

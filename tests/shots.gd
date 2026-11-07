@@ -24,33 +24,36 @@ func _capture() -> void:
 	add_child(main)
 	var grab: Grabber = main.grabber
 	grab.manual_target = true
-	await _seconds(5.0)
-	await _shot("1_standing")
+	await _seconds(1.3)
+	await _shot("1_hello")
 
+	await _seconds(3.0)
 	var buddy: Buddy = main.buddy
 	grab.grab_at(buddy.head.global_position + Vector2(0, -20))
-	grab.target = Vector2(700, 300)
-	await _seconds(0.9)
-	await _shot("2_dangling_by_head")
+	grab.target = Vector2(800, 330)
+	await _seconds(1.0)
+	await _shot("2_grabbed_head")
 
-	grab.target = Vector2(500, 400)
+	grab.target = Vector2(700, 420)
 	await _seconds(0.4)
-	for index in 10:
-		grab.target = Vector2(500 + index * 80, 400)
+	for index in 12:
+		grab.target = Vector2(700 + index * 90, 420)
 		await _physics(1)
 	grab.release()
-	await _seconds(0.08)
-	await _shot("3_thrown_scream")
-	while buddy.torso.global_position.x < 1700 and buddy.torso.linear_velocity.x > 0:
-		await _physics(1)
-	await _physics(2)
-	await _shot("4_wall_impact_squash")
+	await _seconds(0.12)
+	await _shot("3_thrown")
+	await _seconds(0.9)
+	await _shot("4_slam_blood")
 
-	await _seconds(4.0)
-	main.spawn_test_ball(Vector2(400, 200))
-	main.set_gravity(Vector2(-1960, 0))
-	await _seconds(4.0)
-	await _shot("5_gravity_left")
+	await _seconds(2.0)
+	buddy.take_hit({"part": &"head", "force": 4000.0, "damage": 200.0, "source": &"wall",
+			"position": buddy.head.global_position + Vector2(0, -50)})
+	await _seconds(1.5)
+	await _shot("5_knocked_out")
+
+	buddy.revive()
+	await _seconds(0.8)
+	await _shot("6_revived_dizzy")
 	print("shots done")
 	get_tree().quit()
 

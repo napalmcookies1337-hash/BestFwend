@@ -18,6 +18,9 @@ const GRAVITY_DIRECTIONS := {
 
 var root: Control
 var money_label: Label
+var health_bar: ProgressBar
+var health_label: Label
+var _health_fill: StyleBoxFlat
 var slowmo_button: Button
 var shop_button: Button
 var settings_panel: SettingsPanel
@@ -57,6 +60,7 @@ func _ready() -> void:
 	settings_panel.hide()
 
 	Events.money_changed.connect(_on_money_changed)
+	Events.buddy_health_changed.connect(_on_health_changed)
 	Events.notification_posted.connect(show_toast)
 	Events.tool_selected.connect(func(_id: StringName) -> void: _refresh_slots())
 	Events.progress_reset.connect(_refresh_slots)
@@ -119,8 +123,49 @@ func _build_money() -> void:
 	money_label.add_theme_color_override("font_color", UiTheme.MONEY)
 	money_label.add_theme_color_override("font_outline_color", UiTheme.INK)
 	money_label.add_theme_constant_override("outline_size", 8)
-	panel.add_child(money_label)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.add_child(money_label)
+	column.add_child(_build_health())
+	panel.add_child(column)
 	root.add_child(panel)
+
+
+func _build_health() -> Control:
+	var row := HBoxContainer.new()
+	row.name = "Health"
+	row.add_theme_constant_override("separation", 10)
+	health_label = Label.new()
+	health_label.add_theme_font_size_override("font_size", 22)
+	health_label.custom_minimum_size.x = 52
+	row.add_child(health_label)
+	health_bar = ProgressBar.new()
+	health_bar.show_percentage = false
+	health_bar.custom_minimum_size = Vector2(220, 22)
+	health_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var back := UiTheme.box(UiTheme.INK, UiTheme.PANEL_EDGE, 2, 0)
+	back.set_corner_radius_all(8)
+	health_bar.add_theme_stylebox_override("background", back)
+	_health_fill = UiTheme.box(UiTheme.HEALTH, Color.TRANSPARENT, 0, 0)
+	_health_fill.set_corner_radius_all(8)
+	health_bar.add_theme_stylebox_override("fill", _health_fill)
+	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(health_bar)
+	_on_health_changed(Buddy.MAX_HEALTH, Buddy.MAX_HEALTH, false)
+	return row
+
+
+func _on_health_changed(health: float, max_health: float, knocked_out: bool) -> void:
+	health_bar.max_value = max_health
+	health_bar.value = health
+	if knocked_out:
+		health_label.text = "KO!"
+		health_label.add_theme_color_override("font_color", UiTheme.DANGER)
+	else:
+		health_label.text = "HP"
+		health_label.add_theme_color_override("font_color", UiTheme.MUTED)
+	var share := health / max_health
+	_health_fill.bg_color = UiTheme.HEALTH if share > 0.3 else UiTheme.DANGER
 
 
 func _build_top_buttons() -> void:

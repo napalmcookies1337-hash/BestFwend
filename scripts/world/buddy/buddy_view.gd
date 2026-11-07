@@ -17,7 +17,7 @@ const STAR := Color("ffe066")
 const SPEED_STRETCH := 1.0 / 26000.0
 const MAX_SPEED_STRETCH := 0.18
 const SCREAM_SPEED := 1100.0
-const LOW_HEALTH := 30.0
+const LOW_HEALTH := Buddy.LOW_HEALTH
 const BLINK_EVERY := Vector2(2.0, 5.0)
 const BLINK_TIME := 0.12
 

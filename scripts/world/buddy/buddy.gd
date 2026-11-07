@@ -97,7 +97,7 @@ const HIT_EVENT_DV := 320.0
 const HIT_COOLDOWN := 0.15
 const HURT_DV := 750.0
 const HURT_TIME := 0.7
-const MAX_HEALTH := 100.0
+const MAX_HEALTH := 200.0
 ## Hits gentler than this (px/s of velocity change) do no damage.
 ## (A fall from standing height or the spawn drop lands at about 1,000-1,300.)
 const DAMAGE_START_DV := 1400.0
@@ -106,9 +106,11 @@ const PART_DAMAGE := {&"head": 1.5, &"torso": 1.0, &"arm_l": 0.6, &"arm_r": 0.6,
 ## Hits this damaging leave blood on the skin rather than a bruise.
 const BLEED_DAMAGE := 6.0
 const REVIVE_TIME := 6.0
-const REVIVE_HEALTH := 35.0
+const REVIVE_HEALTH := 70.0
 const HEAL_DELAY := 4.0
-const HEAL_RATE := 4.0
+const HEAL_RATE := 8.0
+## Below this it looks groggy and complains.
+const LOW_HEALTH := 60.0
 
 var state := State.RAGDOLL
 var parts: Dictionary = {}

@@ -1,4 +1,4 @@
-extends TestSuite
+﻿extends TestSuite
 ## Milestone 3: health, knockouts, reviving, speech, faces, blood and sounds.
 ## Run with --fixed-fps 120.
 
@@ -64,7 +64,7 @@ func test_hit_lowers_health_and_reports_damage() -> bool:
 
 func test_knockout_stays_down_then_revives() -> bool:
 	await _seconds(3.0)
-	buddy.take_hit({"part": &"head", "force": 1000.0, "damage": 150.0, "position": buddy.head.global_position})
+	buddy.take_hit({"part": &"head", "force": 1000.0, "damage": 300.0, "position": buddy.head.global_position})
 	check(buddy.is_knocked_out, "knocked out")
 	check_eq(buddy.health, 0.0, "no health")
 	check_eq(events, ["ko"], "KO event")
@@ -81,7 +81,7 @@ func test_knockout_stays_down_then_revives() -> bool:
 
 func test_click_wakes_it_up() -> bool:
 	await _seconds(3.0)
-	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 150.0, "position": buddy.torso.global_position})
+	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 300.0, "position": buddy.torso.global_position})
 	await _seconds(1.0)
 	check(grab.grab_at(buddy.torso.global_position), "grabbed the limp body")
 	await physics_frames(3)
@@ -92,7 +92,7 @@ func test_click_wakes_it_up() -> bool:
 
 func test_dragging_a_knocked_out_buddy_does_not_wake_it() -> bool:
 	await _seconds(3.0)
-	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 150.0, "position": buddy.torso.global_position})
+	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 300.0, "position": buddy.torso.global_position})
 	grab.grab_at(buddy.torso.global_position)
 	for index in 60:
 		grab.target = buddy.torso.global_position + Vector2(0, -4.0 * index)
@@ -172,7 +172,7 @@ func test_every_situation_has_lines() -> bool:
 
 func test_knocked_out_buddy_is_silent() -> bool:
 	await _seconds(2.0)
-	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 150.0, "position": buddy.torso.global_position})
+	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 300.0, "position": buddy.torso.global_position})
 	check(not buddy.bubble.visible, "bubble gone")
 	_quiet()
 	check(not buddy.mind.say(&"revived"), "can't talk while out")
@@ -291,9 +291,9 @@ func test_respawn_is_clean_and_healthy() -> bool:
 func test_health_bar_shows_health_and_ko() -> bool:
 	var hud: Hud = main.hud
 	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 40.0, "position": buddy.torso.global_position})
-	check(is_equal_approx(hud.health_bar.value, 60.0), "bar at 60 (%.1f)" % hud.health_bar.value)
+	check(is_equal_approx(hud.health_bar.value, 160.0), "bar at 160 (%.1f)" % hud.health_bar.value)
 	check_eq(hud.health_label.text, "HP", "label")
-	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 100.0, "position": buddy.torso.global_position})
+	buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 200.0, "position": buddy.torso.global_position})
 	check_eq(hud.health_label.text, "KO!", "KO shown")
 	return true
 

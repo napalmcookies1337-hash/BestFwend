@@ -35,7 +35,7 @@ const UPSIDE_DOWN_TIME := 1.0
 const FLIGHT_TIME := 0.8
 const DIZZY_SPIN := 12.0
 const DIZZY_TIME := 1.2
-const LOW_HEALTH := 30.0
+const LOW_HEALTH := Buddy.LOW_HEALTH
 const IDLE_FIRST := 15.0
 const BORED_AFTER := 45.0
 
@@ -160,7 +160,7 @@ func _track_held(delta: float, state: Buddy.State) -> void:
 
 
 func _track_health() -> void:
-	if buddy.health < LOW_HEALTH + 10.0:
+	if buddy.health < LOW_HEALTH + 20.0:
 		_was_low = true
 	elif _was_low and buddy.health >= Buddy.MAX_HEALTH:
 		_was_low = false

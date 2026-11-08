@@ -26,6 +26,7 @@ var fx: Fx
 var grabber: Grabber
 var tools: ToolUser
 var rewards: Rewards
+var minigames: Minigames
 var hud: Hud
 var camera: Camera2D
 var slowmo := false
@@ -62,6 +63,10 @@ func _ready() -> void:
 	rewards = Rewards.new()
 	rewards.sandbox = self
 	add_child(rewards)
+	add_child(Tracker.new())
+	minigames = Minigames.new()
+	minigames.sandbox = self
+	add_child(minigames)
 	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
@@ -70,9 +75,13 @@ func _ready() -> void:
 	hud.clean_up_pressed.connect(clean_up)
 	hud.slowmo_toggled.connect(set_slowmo)
 	hud.gravity_chosen.connect(set_gravity)
+	hud.minigame_requested.connect(func(minigame_id: StringName) -> void: minigames.start(minigame_id))
+	hud.minigame_quit.connect(func() -> void:
+		minigames.stop()
+		hud.minigame_hud.hide_all())
 	set_gravity(gravity)
 	_spawn_buddy()
-	Events.looks_changed.connect(func(_kind: StringName) -> void: apply_looks())
+	Events.listen(self, Events.looks_changed, func(_kind: StringName) -> void: apply_looks())
 	Events.progress_reset.connect(apply_looks)
 	if not Game.load_notice.is_empty():
 		Events.notification_posted.emit.call_deferred(Game.load_notice)
@@ -145,7 +154,7 @@ func respawn(reformed := false) -> void:
 	Events.buddy_respawned.emit()
 
 
-func clean_up() -> void:
+func clean_up(quiet := false) -> void:
 	room.clear_decals()
 	blood.clear()
 	fx.clear()
@@ -155,6 +164,8 @@ func clean_up() -> void:
 			grabber.forget()
 		node.queue_free()
 	objects.clear()
+	if quiet:
+		return
 	Events.room_cleaned.emit()
 	Events.notification_posted.emit("Squeaky clean.")
 
@@ -295,6 +306,7 @@ func explode(at: Vector2, radius: float, power: float, damage: float, sever_chan
 	fx.add(0.6, Fx.sparks(at, 18, radius * 0.9, Color("ffcf4a"), _rng.randi()))
 	fx.add(1.4, Fx.smoke(at, radius * 0.35, _rng.randi()))
 	add_shake(clampf(radius / 18.0, 8.0, 60.0))
+	Events.exploded.emit(at, radius)
 	Sfx.play(&"big_boom" if big else &"boom", 0.0 if big else -2.0)
 
 

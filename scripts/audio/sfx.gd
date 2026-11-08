@@ -97,4 +97,10 @@ func _build() -> void:
 	sounds[&"cha_ching"] = Synth.to_stream(Synth.concat([Synth.hit(0.05, 0.8, 0.0, 0.0, 43),
 		Synth.voice(1320.0, 1320.0, 0.09, [1.0, 0.0, 0.4, 0.0, 0.2], 0.0, 0.0, 0.0, 0.003),
 		Synth.voice(1760.0, 1760.0, 0.32, [1.0, 0.0, 0.4, 0.0, 0.2], 6.0, 0.01, 0.0, 0.003)]), 0.5)
+	sounds[&"whistle_start"] = Synth.to_stream(Synth.concat([
+		Synth.voice(2100.0, 2100.0, 0.12, [1.0, 0.1], 40.0, 0.03, 0.15, 0.005), Synth.silence(0.05),
+		Synth.voice(2100.0, 2100.0, 0.35, [1.0, 0.1], 40.0, 0.03, 0.15, 0.005)]), 0.4)
+	sounds[&"fanfare"] = Synth.to_stream(Synth.concat([
+		Synth.voice(523.0, 523.0, 0.1, [1.0, 0.5, 0.3]), Synth.voice(659.0, 659.0, 0.1, [1.0, 0.5, 0.3]),
+		Synth.voice(784.0, 784.0, 0.1, [1.0, 0.5, 0.3]), Synth.voice(1046.0, 1046.0, 0.45, [1.0, 0.5, 0.3], 6.0, 0.012)]), 0.5)
 	sounds[&"fuse"] = Synth.to_stream(Synth.hit(0.8, 0.85, 0.0, 0.0, 37), 0.3)

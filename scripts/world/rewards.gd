@@ -19,9 +19,9 @@ func _ready() -> void:
 	name = "Rewards"
 	Events.buddy_hit.connect(_on_hit)
 	Events.buddy_interacted.connect(_on_interacted)
-	Events.buddy_limb_lost.connect(func(_limb: StringName) -> void: _bonus(&"limb"))
-	Events.buddy_knocked_out.connect(func() -> void: _bonus(&"knockout"))
-	Events.buddy_shattered.connect(func() -> void: _bonus(&"shatter"))
+	Events.listen(self, Events.buddy_limb_lost, func(_limb: StringName) -> void: _bonus(&"limb"))
+	Events.listen(self, Events.buddy_knocked_out, func() -> void: _bonus(&"knockout"))
+	Events.listen(self, Events.buddy_shattered, func() -> void: _bonus(&"shatter"))
 
 
 func _process(delta: float) -> void:

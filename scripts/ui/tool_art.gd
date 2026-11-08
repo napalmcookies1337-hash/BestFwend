@@ -391,6 +391,22 @@ static func brain(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
 		Art.line(canvas, xf, squiggle, 2.2, fold)
 
 
+## A trophy cup: gold when won, grey while still a goal.
+static func trophy(canvas: CanvasItem, xf: Transform2D, ink: float, won: bool) -> void:
+	var metal := GOLD if won else Color("6c6480")
+	for side: float in [-1.0, 1.0]:
+		var handle := Art.circle(14, Vector2(26 * side, -18), 20)
+		var hole := Art.circle(8, Vector2(26 * side, -18), 20)
+		for loop in Geometry2D.clip_polygons(handle, hole):
+			Art.shape(canvas, xf, loop, metal, ink * 0.8, false)
+	Art.shape(canvas, xf, Art.rect(12, 18, Vector2(0, 18)), metal.darkened(0.15), ink)
+	Art.shape(canvas, xf, Art.round_rect(44, 12, 3, Vector2(0, 32)), metal.darkened(0.25), ink)
+	var cup := PackedVector2Array([Vector2(-30, -38), Vector2(30, -38), Vector2(26, -12), Vector2(12, 8), Vector2(-12, 8), Vector2(-26, -12)])
+	Art.shape(canvas, xf, cup, metal, ink)
+	if won:
+		Art.flat(canvas, xf, Art.star(5, 9, 4, Vector2(0, -18)), Color("fff6c8"))
+
+
 static func padlock(canvas: CanvasItem, xf: Transform2D, ink: float, color: Color) -> void:
 	var shackle := Art.capsule(16, 44, Vector2(0, -14))
 	var hole := Art.capsule(9, 30, Vector2(0, -14))

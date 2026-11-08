@@ -37,9 +37,22 @@ signal tool_purchased(tool_id: StringName)
 signal looks_changed(kind: StringName)
 signal item_unlocked(kind: StringName, item_id: StringName)
 
-# Goals (Milestone 7).
-signal achievement_progressed(achievement_id: StringName, value: float)
+# Goals.
 signal achievement_unlocked(achievement_id: StringName)
+## Today's challenges were made (a new day, or a reset).
+signal daily_refreshed
+signal daily_completed(index: int)
+signal prestiged(count: int)
+## The Buddy landed after `seconds` in the air.
+signal buddy_flight(seconds: float)
+## Something blew up.
+signal exploded(at: Vector2, radius: float)
+# Minigames.
+signal minigame_started(minigame_id: StringName)
+## info keys: "title", "time_left", "score_text", "hint".
+signal minigame_updated(info: Dictionary)
+## result keys: "id", "title", "score", "score_text", "best", "new_best", "reward".
+signal minigame_finished(result: Dictionary)
 
 # Room.
 signal room_cleaned
@@ -53,3 +66,13 @@ signal game_saved
 signal notification_posted(text: String)
 
 @warning_ignore_restore("unused_signal")
+
+
+## Connects `callable` to `event` for as long as `owner` is in the tree. Use this
+## for inline functions: unlike methods, Godot doesn't drop a lambda's connection
+## when the node that made it is freed, so it would keep running forever.
+func listen(owner: Node, event: Signal, callable: Callable) -> void:
+	event.connect(callable)
+	owner.tree_exiting.connect(func() -> void:
+		if event.is_connected(callable):
+			event.disconnect(callable), CONNECT_ONE_SHOT)

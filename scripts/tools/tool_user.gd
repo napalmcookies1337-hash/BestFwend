@@ -10,12 +10,14 @@ var active: ToolBehavior
 var cursor := Vector2.ZERO
 ## Tests move the cursor directly instead of following the mouse.
 var manual_cursor := false
+## While true, only the Hand works (minigames that are about throwing).
+var locked := false
 
 
 func _ready() -> void:
 	name = "Tools"
 	z_index = 40
-	Events.tool_selected.connect(func(_id: StringName) -> void: release_all())
+	Events.listen(self, Events.tool_selected, func(_id: StringName) -> void: release_all())
 
 
 func current() -> ToolBehavior:
@@ -55,7 +57,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Uses the selected tool at `at`. Returns true if a tool took the click.
 func press(at: Vector2) -> bool:
 	var behavior := current()
-	if behavior == null or not Game.can_use_tool(behavior.def.id):
+	if locked or behavior == null or not Game.can_use_tool(behavior.def.id):
 		return false
 	cursor = at
 	Events.tool_used.emit(StringName(behavior.def.id), at)

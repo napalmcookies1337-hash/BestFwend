@@ -102,9 +102,13 @@ func earn(amount: int, reason: StringName) -> void:
 		return
 	profile.money += amount
 	profile.lifetime_money += amount
+	profile.run_earned += amount
 	mark_dirty()
 	Events.money_earned.emit(amount, reason)
 	Events.money_changed.emit(profile.money)
+	# Rewards don't count toward "earn" goals, or goals would pay for themselves.
+	if reason != &"achievement" and reason != &"daily":
+		record("earned", amount)
 
 
 func spend(amount: int, reason: StringName) -> bool:
@@ -265,9 +269,102 @@ func tool_power(tool_id: String) -> float:
 	return 1.0 + UPGRADE_STEP * tool_level(tool_id)
 
 
-## Applied to every payout. Prestige (Milestone 7) raises it.
+## Applied to every payout. Each prestige adds PRESTIGE_BONUS.
 func reward_multiplier() -> float:
-	return 1.0
+	return 1.0 + PRESTIGE_BONUS * profile.prestige_count
+
+
+# --- Goals: stats, achievements, daily challenges -----------------------------
+
+## For tests: pretend today is this date ("YYYY-MM-DD"). Empty uses the clock.
+var date_override := ""
+
+
+func today() -> String:
+	return date_override if not date_override.is_empty() else Time.get_date_string_from_system()
+
+
+## Counts something toward stats, achievements and today's challenges. Stats in
+## GoalData.MAX_STATS keep the best value; others add up.
+func record(stat: String, amount := 1.0) -> void:
+	var keep_max := GoalData.MAX_STATS.has(stat)
+	var old := float(profile.stats.get(stat, 0.0))
+	profile.stats[stat] = maxf(old, amount) if keep_max else old + amount
+	mark_dirty()
+	_record_daily(stat, amount, keep_max)
+	check_achievements()
+
+
+## Remembers that a tool was used today, for the "use N tools" challenge.
+func note_tool_used(tool_id: String) -> void:
+	record("used_" + tool_id)
+	var tools_today: Array = daily()["tools_today"]
+	if not tools_today.has(tool_id):
+		tools_today.append(tool_id)
+		_record_daily("tools_used", tools_today.size(), true)
+
+
+func check_achievements() -> void:
+	var any := false
+	for achievement_id in Goals.pending_unlocks(profile):
+		profile.achievements[achievement_id] = {"unlocked_at": int(Time.get_unix_time_from_system())}
+		mark_dirty()
+		any = true
+		Events.achievement_unlocked.emit(StringName(achievement_id))
+		earn(int(GoalData.ACHIEVEMENTS[achievement_id][4]), &"achievement")
+	if any:
+		save_now()
+
+
+## Today's challenges, made fresh when the date changes.
+func daily() -> Dictionary:
+	if profile.daily.get("date", "") != today() or not profile.daily.has("challenges"):
+		profile.daily = Goals.make_daily(today(), profile.owned_tools)
+		mark_dirty()
+		Events.daily_refreshed.emit()
+	return profile.daily
+
+
+func _record_daily(stat: String, amount: float, keep_max: bool) -> void:
+	var current := daily()
+	for index in Goals.record_daily(current, stat, amount, keep_max):
+		var challenge: Dictionary = current["challenges"][index]
+		Events.daily_completed.emit(index)
+		earn(int(challenge["reward"]), &"daily")
+
+
+# --- Prestige -------------------------------------------------------------------
+
+const PRESTIGE_BASE := 50000
+const PRESTIGE_BONUS := 0.25
+
+
+## $$$ to earn this run before the next prestige is allowed.
+func prestige_goal() -> int:
+	return PRESTIGE_BASE * (profile.prestige_count + 1)
+
+
+func can_prestige() -> bool:
+	return profile.run_earned >= prestige_goal()
+
+
+## Wipes $$$, tools and upgrades for a permanent payout bonus. Looks,
+## achievements, stats, best scores and settings stay.
+func prestige() -> bool:
+	if not can_prestige():
+		return false
+	profile.prestige_count += 1
+	profile.money = 0
+	profile.run_earned = 0
+	profile.owned_tools = ["hand"] as Array[String]
+	profile.selected_tool = "hand"
+	profile.tool_upgrades = {}
+	mark_dirty()
+	save_now()
+	Events.prestiged.emit(profile.prestige_count)
+	Events.progress_reset.emit()
+	Events.money_changed.emit(profile.money)
+	return true
 
 
 func select_tool(tool_id: String) -> bool:

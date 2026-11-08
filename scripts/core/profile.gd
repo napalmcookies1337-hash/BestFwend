@@ -10,13 +10,15 @@ const DEFAULT_SETTINGS := {
 	"fullscreen": false,
 }
 const KNOWN_KEYS := [
-	"money", "lifetime_money", "owned_tools", "selected_tool", "tool_upgrades",
+	"money", "lifetime_money", "run_earned", "owned_tools", "selected_tool", "tool_upgrades",
 	"owned_skins", "skin", "owned_colors", "buddy_color", "owned_backgrounds", "background",
 	"achievements", "stats", "best_scores", "prestige_count", "daily", "settings",
 ]
 
 var money := 0
 var lifetime_money := 0
+## Earned since the last prestige reset.
+var run_earned := 0
 var owned_tools: Array[String] = ["hand"]
 var selected_tool := "hand"
 ## tool id -> upgrade level (Milestone 5).
@@ -47,6 +49,7 @@ func to_dict() -> Dictionary:
 	result.merge({
 		"money": money,
 		"lifetime_money": lifetime_money,
+		"run_earned": run_earned,
 		"owned_tools": owned_tools.duplicate(),
 		"selected_tool": selected_tool,
 		"tool_upgrades": tool_upgrades.duplicate(true),
@@ -71,6 +74,7 @@ static func from_dict(data: Dictionary) -> Profile:
 	var profile := Profile.new()
 	profile.money = _count(data, "money")
 	profile.lifetime_money = maxi(_count(data, "lifetime_money"), profile.money)
+	profile.run_earned = mini(_count(data, "run_earned"), profile.lifetime_money)
 	profile.owned_tools = _names(data, "owned_tools", ["hand"])
 	if not profile.owned_tools.has("hand"):
 		profile.owned_tools.push_front("hand")

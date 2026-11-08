@@ -45,9 +45,10 @@ func test_buy_and_wear() -> bool:
 	check(not Game.buy_look(&"skin", "crown"), "so can't buy it")
 	Game.earn(10000, &"test")
 	check_eq(Game.look_status(&"skin", "crown"), &"buyable", "now it can")
+	var before := Game.profile.money
 	check(Game.buy_look(&"skin", "crown"), "bought")
 	check_eq(Game.profile.skin, "crown", "and put it on")
-	check_eq(Game.profile.money, 5000, "paid 5,000")
+	check_eq(Game.profile.money, before - 5000, "paid 5,000")
 	check(Game.equip_look(&"skin", "classic"), "swap back for free")
 	check_eq(Game.look_status(&"skin", "crown"), &"owned", "still owned")
 	check(not Game.equip_look(&"skin", "devil"), "can't wear what you don't own")

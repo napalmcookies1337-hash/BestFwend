@@ -154,6 +154,8 @@ var bubble: SpeechBubble
 var health := MAX_HEALTH
 var is_knocked_out := false
 var is_shattered := false
+## Takes hits and reports damage but never loses health (Impact Frenzy).
+var invulnerable := false
 var ground_hit := false
 var ground_distance := INF
 var stand_strength := 0.0
@@ -327,7 +329,7 @@ func take_hit(info: Dictionary) -> Dictionary:
 		if part != null and info.has("position"):
 			var mark: BuddyPart.Mark = info.get("mark", BuddyPart.Mark.BLOOD if damage >= BLEED_DAMAGE and info.get("bleed", true) else BuddyPart.Mark.BRUISE)
 			part.add_mark(part.to_local(info["position"]), mark, damage)
-		if not is_knocked_out:
+		if not is_knocked_out and not invulnerable:
 			_set_health(health - damage)
 			if health <= 0.0:
 				_knock_out()

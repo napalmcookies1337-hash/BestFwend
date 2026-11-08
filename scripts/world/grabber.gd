@@ -37,6 +37,8 @@ var target := Vector2.ZERO
 var target_velocity := Vector2.ZERO
 ## Tests steer the target directly instead of following the mouse.
 var manual_target := false
+## While true, nothing can be grabbed (a minigame's one throw is in flight).
+var locked := false
 var _last_target := Vector2.ZERO
 var _press_point := Vector2.ZERO
 var _held_time := 0.0
@@ -66,6 +68,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Returns true if the press grabbed something.
 func press(button: MouseButton, at: Vector2) -> bool:
+	if locked:
+		return false
 	var hand_selected := Game.profile.selected_tool == "hand"
 	if button == MOUSE_BUTTON_RIGHT or (button == MOUSE_BUTTON_LEFT and hand_selected):
 		if grab_at(at):

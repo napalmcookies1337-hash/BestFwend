@@ -7,9 +7,12 @@ signal respawn_pressed
 signal clean_up_pressed
 signal slowmo_toggled(enabled: bool)
 signal gravity_chosen(gravity: Vector2)
+signal minigame_requested(minigame_id: StringName)
+signal minigame_quit
 
 const TOAST_SECONDS := 3.0
 const MAX_TOASTS := 3
+const GOLD := Color("f2c14e")
 const GRAVITY_DIRECTIONS := {
 	"Down": Vector2.DOWN,
 	"Up": Vector2.UP,
@@ -25,6 +28,9 @@ var _health_fill: StyleBoxFlat
 var slowmo_button: Button
 var shop_button: Button
 var shop_panel: ShopPanel
+var goals_button: Button
+var goals_panel: GoalsPanel
+var minigame_hud: MinigameHud
 var combo_label: Label
 ## Tools the player has already been told they can afford, this session.
 var _announced: Dictionary = {}
@@ -66,6 +72,15 @@ func _ready() -> void:
 	shop_panel = ShopPanel.new()
 	root.add_child(shop_panel)
 	shop_panel.hide()
+	goals_panel = GoalsPanel.new()
+	root.add_child(goals_panel)
+	goals_panel.hide()
+	goals_panel.minigame_chosen.connect(minigame_requested.emit)
+	minigame_hud = MinigameHud.new()
+	root.add_child(minigame_hud)
+	minigame_hud.quit_pressed.connect(minigame_quit.emit)
+	minigame_hud.quit_pressed.connect(func() -> void: _toasts.position.y = 28.0)
+	minigame_hud.again_pressed.connect(minigame_requested.emit)
 	for tool in ToolCatalog.all():
 		if Game.tool_status(tool.id) == &"buyable":
 			_announced[tool.id] = true
@@ -73,11 +88,18 @@ func _ready() -> void:
 	Events.money_changed.connect(_on_money_changed)
 	Events.buddy_health_changed.connect(_on_health_changed)
 	Events.notification_posted.connect(show_toast)
-	Events.tool_selected.connect(func(_id: StringName) -> void: _refresh_slots())
+	Events.listen(self, Events.tool_selected, func(_id: StringName) -> void: _refresh_slots())
 	Events.progress_reset.connect(_refresh_slots)
 	Events.tool_purchased.connect(_on_tool_purchased)
-	Events.item_unlocked.connect(func(_kind: StringName, _id: StringName) -> void: _refresh_slots())
+	Events.listen(self, Events.item_unlocked, func(_kind: StringName, _id: StringName) -> void: _refresh_slots())
 	Events.combo_changed.connect(_on_combo_changed)
+	Events.achievement_unlocked.connect(_on_achievement)
+	Events.daily_completed.connect(_on_daily_completed)
+	Events.listen(self, Events.prestiged, func(count: int) -> void:
+		show_toast("Prestige %d! Everything now pays x%.2f." % [count, Game.reward_multiplier()], GOLD)
+		Sfx.play(&"fanfare", -2.0))
+	Events.listen(self, Events.minigame_started, func(_id: StringName) -> void: _toasts.position.y = 150.0)
+	Events.listen(self, Events.minigame_finished, func(_result: Dictionary) -> void: _toasts.position.y = 28.0)
 	_on_money_changed(Game.profile.money, false)
 
 
@@ -92,10 +114,11 @@ func set_base_gravity(value: float) -> void:
 
 ## Returns true if a menu was open.
 func close_menus() -> bool:
-	var was_open := settings_panel.visible or gravity_panel.visible or shop_panel.visible
+	var was_open := settings_panel.visible or gravity_panel.visible or shop_panel.visible or goals_panel.visible
 	settings_panel.hide()
 	gravity_panel.hide()
 	shop_panel.hide()
+	goals_panel.hide()
 	return was_open
 
 
@@ -114,7 +137,7 @@ func set_slowmo_shown(enabled: bool) -> void:
 	slowmo_button.set_pressed_no_signal(enabled)
 
 
-func show_toast(text: String) -> void:
+func show_toast(text: String, color := UiTheme.TEXT) -> void:
 	# Only the newest few stay up, so a burst of news can't cover the room.
 	var live := _toasts.get_children().filter(func(node: Node) -> bool: return not node.is_queued_for_deletion())
 	while live.size() >= MAX_TOASTS:
@@ -126,6 +149,7 @@ func show_toast(text: String) -> void:
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", color)
 	panel.add_child(label)
 	_toasts.add_child(panel)
 	_toasts.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE)
@@ -208,6 +232,13 @@ func _build_top_buttons() -> void:
 		settings_panel.hide()
 		gravity_panel.hide()
 		shop_panel.visible = not shop_panel.visible)
+	goals_button = _button("Goals", "Achievements, daily challenges, minigames and prestige.")
+	goals_button.pressed.connect(func() -> void:
+		settings_panel.hide()
+		gravity_panel.hide()
+		shop_panel.hide()
+		goals_panel.visible = not goals_panel.visible)
+	row.add_child(goals_button)
 	row.add_child(shop_button)
 	var settings_button := _button("Settings", "Volume, fullscreen and progress.")
 	settings_button.pressed.connect(func() -> void:
@@ -413,3 +444,14 @@ func _on_combo_changed(multiplier: float) -> void:
 		var tween := combo_label.create_tween()
 		tween.tween_property(combo_label, "scale", Vector2(1.2, 1.2), 0.06)
 		tween.tween_property(combo_label, "scale", Vector2.ONE, 0.15)
+
+func _on_achievement(achievement_id: StringName) -> void:
+	var spec: Array = GoalData.ACHIEVEMENTS[String(achievement_id)]
+	show_toast("Achievement: %s!  +%s" % [spec[0], Fmt.money(spec[4])], GOLD)
+	Sfx.play(&"fanfare", -2.0)
+
+
+func _on_daily_completed(index: int) -> void:
+	var challenge: Dictionary = Game.daily()["challenges"][index]
+	show_toast("Daily done: %s  +%s" % [Goals.daily_text(challenge), Fmt.money(challenge["reward"])], GOLD)
+	Sfx.play(&"fanfare", -2.0)

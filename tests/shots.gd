@@ -24,41 +24,42 @@ func _capture() -> void:
 	add_child(main)
 	main.tools.manual_cursor = true
 	main.grabber.manual_target = true
-	Game.earn(60000, &"shots")
-	await _seconds(0.5)
-
-	Game.buy_look(&"room", "kitchen")
-	Game.buy_look(&"skin", "cat")
-	Game.buy_look(&"color", "mint")
-	await _seconds(4.0)
-	await _shot("1_kitchen_cat")
-
-	Game.buy_look(&"room", "space")
-	Game.buy_look(&"skin", "crown")
-	Game.buy_look(&"color", "grape")
 	await _seconds(3.0)
-	main.grabber.grab_at(main.buddy.head.global_position)
-	main.grabber.target = Vector2(700, 380)
-	await _seconds(0.8)
-	await _shot("2_space_crown_dangling")
-	main.grabber.release()
 
-	Game.buy_look(&"room", "dungeon")
-	Game.buy_look(&"skin", "tophat")
-	await _seconds(3.0)
-	await _shot("3_dungeon_tophat")
+	# Some progress, an achievement popping, and the Goals window.
+	Game.earn(12000, &"shots")
+	for _index in 3:
+		Game.record("throws")
+	Game.record("knockouts")
+	Game.record("biggest_hit", 4200.0)
+	await _seconds(0.3)
+	await _shot("1_achievement_toasts")
+	main.hud.goals_panel.show()
+	main.hud.goals_panel.show_page(0)
+	await _seconds(0.3)
+	await _shot("2_goals_achievements")
+	main.hud.goals_panel.show_page(1)
+	await _seconds(0.2)
+	await _shot("3_goals_daily")
+	main.hud.goals_panel.show_page(2)
+	await _seconds(0.2)
+	await _shot("4_goals_minigames")
+	Game.earn(40000, &"shots")
+	main.hud.goals_panel.show_page(3)
+	await _seconds(0.2)
+	await _shot("5_goals_prestige")
+	main.hud.goals_panel.hide()
 
-	Game.buy_look(&"room", "backyard")
-	main.hud.shop_panel.show()
-	main.hud.shop_panel.show_category(ShopPanel.TOOL_TABS + 1)
+	# Target Toss in progress, then its results.
+	var game: Minigame = main.minigames.start(&"toss")
+	await _seconds(2.0)
+	game.score = 3.0
+	await _seconds(0.2)
+	await _shot("6_toss_running")
+	game.score = 7.0
+	game.time_left = 0.01
 	await _seconds(0.3)
-	await _shot("4_shop_skins")
-	main.hud.shop_panel.show_category(ShopPanel.TOOL_TABS + 2)
-	await _seconds(0.3)
-	await _shot("5_shop_rooms")
-	main.hud.shop_panel.show_category(ShopPanel.TOOL_TABS)
-	await _seconds(0.3)
-	await _shot("6_shop_colors")
+	await _shot("7_results")
 	print("shots done")
 	get_tree().quit()
 

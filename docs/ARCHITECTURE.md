@@ -163,6 +163,22 @@ The original file is kept once as `pre_v<N>.json`. Adding a new key read with a 
 - Slow-mo sets `Engine.time_scale`. Physics still steps 120 times per real second, with smaller steps, so it stays smooth.
 - Anything Clean Up should remove joins the `debris` group.
 
+## Goals: stats, achievements, daily challenges, prestige
+
+- **Stats:** `Game.record(stat, amount)` adds to `profile.stats`, or keeps the best for stats in `GoalData.MAX_STATS`. [tracker.gd](../scripts/world/tracker.gd) turns events into stats (throws, hits, knockouts, limbs, explosions, combo, flight, tool uses, play time). `Game.earn` records `earned`, except achievement and daily rewards so goals can't pay for themselves.
+- **Achievements** are data in [goals.gd](../data/goals.gd) (`GoalData.ACHIEVEMENTS`: name, description, stat, goal, reward). Every `record` checks them (`Goals.pending_unlocks`); unlocking pays, saves and emits `achievement_unlocked`. `tools_owned` and `looks_owned` are computed from the profile.
+- **Daily challenges:** `GoalData.DAILIES` templates with easy/medium/hard goals. `Game.daily()` makes three for today from templates whose tool you own (the same date always gives the same set) and they pay once when done. Uses the local date; `Game.date_override` fakes it in tests.
+- **Prestige:** after earning `PRESTIGE_BASE x (level + 1)` in a run, `Game.prestige()` wipes $$$, tools and upgrades and adds +25% to `reward_multiplier()`. Looks, achievements, stats, best scores and today's challenge progress stay.
+- Rules are plain functions in [goals.gd](../scripts/core/goals.gd) so they're testable without the game running.
+
+## Minigames
+
+[minigames.gd](../scripts/minigames/minigames.gd) starts one from a clean room, normal gravity and a fresh Buddy, and on `finish()` saves the best score, records `best_<id>`, pays `reward_for(score)` and emits `minigame_finished`. A game extends `Minigame`: set `time_left`, override `begin / tick / score_text / reward_for / cleanup`, and call `finish()`. `cleanup()` must undo anything it changed: `ToolUser.locked` and `Grabber.locked` (Hand only / no regrab), `Buddy.invulnerable`.
+
+- **Ricochet:** one throw, score is distance travelled in metres until it rests.
+- **Target Toss:** 45 s, hits count while the Buddy flies free.
+- **Impact Frenzy:** 30 s, any owned tools, score is damage, the Buddy can't be knocked out.
+
 ## Looks (colours, skins, rooms)
 
 - All looks are data in [cosmetics.gd](../data/cosmetics.gd): `COLORS`, `SKINS`, `ROOMS`. The first entry of each is free. A skin is a combination of a `pattern` (on the skin), a `back` piece (behind the head: ears, horns, antennae), a `hat` and a `face` piece. Purely cosmetic: nothing changes gameplay.

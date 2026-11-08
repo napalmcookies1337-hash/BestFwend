@@ -72,9 +72,9 @@ func _ready() -> void:
 	grid.add_theme_constant_override("v_separation", 14)
 	box.add_child(grid)
 
-	Events.money_changed.connect(func(_total: int) -> void: _refresh())
-	Events.tool_purchased.connect(func(_id: StringName) -> void: _refresh())
-	Events.looks_changed.connect(func(_kind: StringName) -> void: _rebuild())
+	Events.listen(self, Events.money_changed, func(_total: int) -> void: _refresh())
+	Events.listen(self, Events.tool_purchased, func(_id: StringName) -> void: _refresh())
+	Events.listen(self, Events.looks_changed, func(_kind: StringName) -> void: _rebuild())
 	visibility_changed.connect(func() -> void:
 		if visible:
 			_refresh())

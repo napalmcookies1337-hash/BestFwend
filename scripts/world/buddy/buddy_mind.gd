@@ -93,7 +93,7 @@ func _ready() -> void:
 	Events.gravity_changed.connect(_on_gravity_changed)
 	Events.slowmo_changed.connect(_on_slowmo_changed)
 	Events.room_cleaned.connect(_on_room_cleaned)
-	Events.looks_changed.connect(func(kind: StringName) -> void:
+	Events.listen(self, Events.looks_changed, func(kind: StringName) -> void:
 		_cooldowns.erase(&"new_look")
 		say(&"new_room" if kind == &"room" else &"new_look"))
 	var greeting := &"respawn" if buddy.has_meta(&"respawned") else &"spawn"
@@ -171,6 +171,8 @@ func _track_flight(delta: float, state: Buddy.State) -> void:
 		return
 	if _airborne >= FLIGHT_TIME and state != Buddy.State.GRABBED:
 		say(&"survived", 0.6)
+	if _airborne > 0.0:
+		Events.buddy_flight.emit(_airborne)
 	_airborne = 0.0
 
 

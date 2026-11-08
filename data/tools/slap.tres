@@ -11,6 +11,7 @@ description = "A stinging open-handed smack."
 category = 0
 order = 2
 price = 150
+requires = "poke"
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

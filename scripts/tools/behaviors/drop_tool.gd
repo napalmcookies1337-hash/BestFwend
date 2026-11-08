@@ -15,7 +15,7 @@ func press(at: Vector2) -> void:
 		start.y = area.position.y if down.y > 0.0 else area.end.y
 	else:
 		start.x = area.position.x if down.x > 0.0 else area.end.x
-	var object := sandbox.spawn_object(StringName(param("kind", "anvil")), start, down * float(param("speed", 300.0)))
+	var object := sandbox.spawn_object(StringName(param("kind", "anvil")), start, down * float(param("speed", 300.0)), power())
 	object.rotation = down.angle()
 	sandbox.fx.add(0.8, _target(at.clamp(area.position, area.end), down))
 	if param("whistle", false):

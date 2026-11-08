@@ -11,6 +11,7 @@ description = "Jab it with a finger. Annoying, harmless."
 category = 0
 order = 1
 price = 50
+requires = ""
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

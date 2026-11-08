@@ -11,6 +11,7 @@ description = "Nail a part to the wall. Click a nail to pull it out."
 category = 0
 order = 4
 price = 800
+requires = "slap"
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

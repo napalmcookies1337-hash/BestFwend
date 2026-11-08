@@ -26,6 +26,8 @@ const OUTLINE := Color("1e1426")
 var kind: StringName = &"ball"
 var spec: Dictionary = {}
 var sandbox: Node
+## Upgrades make blasts bigger: push and damage scale with this, radius with its root.
+var power_scale := 1.0
 var fuse := -1.0
 var armed_time := 0.0
 var _exploded := false
@@ -90,7 +92,7 @@ func detonate() -> void:
 		return
 	_exploded = true
 	var blast: Array = spec["blast"]
-	sandbox.explode(global_position, blast[0], blast[1], blast[2], blast[3], kind)
+	sandbox.explode(global_position, blast[0] * sqrt(power_scale), blast[1] * power_scale, blast[2] * power_scale, blast[3], kind)
 	queue_free()
 
 

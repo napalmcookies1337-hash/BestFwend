@@ -4,6 +4,6 @@ extends ToolBehavior
 
 
 func press(at: Vector2) -> void:
-	var object := sandbox.spawn_object(StringName(param("kind", "ball")), at)
+	var object := sandbox.spawn_object(StringName(param("kind", "ball")), at, Vector2.ZERO, power())
 	sandbox.grabber.hold(object, object.global_position, MOUSE_BUTTON_LEFT)
 	Sfx.play(&"pop", -8.0, 0.8)

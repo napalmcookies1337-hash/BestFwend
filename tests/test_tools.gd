@@ -14,6 +14,7 @@ var kinds: Array = []
 
 func before_each() -> void:
 	reset_game("tools")
+	Game.unlock_all_tools()
 	hits.clear()
 	kinds.clear()
 	main = MAIN_SCENE.instantiate()

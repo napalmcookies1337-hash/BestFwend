@@ -11,6 +11,7 @@ description = "Drops from the sky above where you click."
 category = 1
 order = 2
 price = 1500
+requires = "brick"
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

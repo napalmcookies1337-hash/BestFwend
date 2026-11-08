@@ -11,6 +11,7 @@ description = "A heavy brick, in your hand. Throw it."
 category = 1
 order = 1
 price = 300
+requires = "ball"
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

@@ -39,7 +39,9 @@ func test_toolbar_shows_hand_selected() -> bool:
 	check_eq(slots[0].tool_id, "hand", "hand in the first slot")
 	check(slots[0].button_pressed, "hand highlighted")
 	check_eq(slots[1].tool_id, "poke", "poke next")
-	check(slots[6].disabled, "empty slots are locked")
+	check(not slots[1].usable, "but it isn't owned yet")
+	check_eq(slots[1].price, 50, "and shows its price")
+	check(slots[6].disabled, "empty slots are disabled")
 	var counts := {}
 	for tool in ToolCatalog.all():
 		counts[tool.category] = counts.get(tool.category, 0) + 1
@@ -100,7 +102,11 @@ func test_hotkey_selects_owned_tool() -> bool:
 	main.hud.select_hotbar(1)
 	check_eq(Game.profile.selected_tool, "hand", "slot 1 is the hand")
 	main.hud.select_hotbar(5)
-	check_eq(Game.profile.selected_tool, "pin", "slot 5 is the pin")
+	check_eq(Game.profile.selected_tool, "hand", "an unowned tool can't be picked")
+	Game.profile.owned_tools.append("pin")
+	main.hud._refresh_slots()
+	main.hud.select_hotbar(5)
+	check_eq(Game.profile.selected_tool, "pin", "slot 5 is the pin once owned")
 	main.hud.select_hotbar(8)
 	check_eq(Game.profile.selected_tool, "pin", "an empty slot changes nothing")
 	Game.select_tool("hand")

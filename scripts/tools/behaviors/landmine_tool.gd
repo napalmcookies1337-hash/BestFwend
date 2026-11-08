@@ -4,5 +4,5 @@ extends ToolBehavior
 
 
 func press(at: Vector2) -> void:
-	sandbox.place_landmine(at)
+	sandbox.place_landmine(at, power())
 	Sfx.play(&"clink", -4.0, 0.7)

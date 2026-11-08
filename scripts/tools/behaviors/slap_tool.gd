@@ -12,7 +12,7 @@ func press(at: Vector2) -> void:
 	if side == 0.0:
 		side = 1.0
 	var direction := Vector2(side, -0.35).normalized()
-	var force := float(param("force", 1750.0)) * def.strength
+	var force := float(param("force", 1750.0)) * power()
 	part.linear_velocity += direction * force * 0.8
 	buddy().take_hit({"part": part.part_name, "force": force, "source": &"slap", "bleed": false,
 			"normal": -direction, "position": at})

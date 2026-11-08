@@ -11,6 +11,7 @@ description = "Freezes it solid. Hits hurt more until it thaws."
 category = 3
 order = 2
 price = 3500
+requires = "ignite"
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

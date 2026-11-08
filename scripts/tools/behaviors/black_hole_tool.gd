@@ -4,4 +4,4 @@ extends ToolBehavior
 
 func press(at: Vector2) -> void:
 	var area := sandbox.room.interior().grow(-40.0)
-	sandbox.spawn_black_hole(at.clamp(area.position, area.end), def.duration)
+	sandbox.spawn_black_hole(at.clamp(area.position, area.end), def.duration * power())

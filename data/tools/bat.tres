@@ -11,6 +11,7 @@ description = "Hold and swipe through your fwend. Faster swings hit harder."
 category = 1
 order = 3
 price = 600
+requires = "ball"
 targeting = 3
 behavior = ExtResource("2")
 use_interval = 0

@@ -126,7 +126,9 @@ func release() -> void:
 	if is_instance_valid(held):
 		var bodies: Array = held_buddy.part_list if is_instance_valid(held_buddy) else [held]
 		for body: RigidBody2D in bodies:
-			body.linear_velocity = (body.linear_velocity * THROW_BOOST).limit_length(MAX_THROW_SPEED)
+			# Hand upgrades ("Strong Arm") throw harder.
+			var arm := Game.tool_power("hand")
+			body.linear_velocity = (body.linear_velocity * THROW_BOOST * arm).limit_length(MAX_THROW_SPEED * sqrt(arm))
 		if is_instance_valid(held_buddy):
 			var part_name := (held as BuddyPart).part_name
 			held_buddy.on_released(held.linear_velocity)

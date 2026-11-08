@@ -53,7 +53,7 @@ func _sweep(from: Vector2, to: Vector2, speed: float) -> void:
 
 func _strike(body: RigidBody2D, at: Vector2, speed: float) -> void:
 	var direction := velocity.normalized()
-	var force := minf(speed * float(param("force_scale", 1.0)), float(param("max_force", 4200.0))) * def.strength
+	var force := minf(speed * float(param("force_scale", 1.0)), float(param("max_force", 4200.0))) * power()
 	body.linear_velocity += direction * force * 0.75
 	if not (body is BuddyPart) or (body as BuddyPart).detached:
 		Sfx.play(&"thud", -6.0)

@@ -10,6 +10,7 @@ description = "Grab any part of your fwend. Fling it. Release to throw."
 category = 0
 order = 0
 price = 0
+requires = ""
 targeting = 1
 use_interval = 0
 duration = 0

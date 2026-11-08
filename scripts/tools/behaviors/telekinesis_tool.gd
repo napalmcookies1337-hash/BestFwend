@@ -20,7 +20,7 @@ func press(at: Vector2) -> void:
 	_lifted_buddy = null
 	_last = at
 	_velocity = Vector2.ZERO
-	var radius := float(param("radius", 240.0))
+	var radius := float(param("radius", 240.0)) * sqrt(power())
 	var circle := CircleShape2D.new()
 	circle.radius = radius
 	var query := PhysicsShapeQueryParameters2D.new()

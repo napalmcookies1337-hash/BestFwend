@@ -9,6 +9,7 @@ signal slowmo_toggled(enabled: bool)
 signal gravity_chosen(gravity: Vector2)
 
 const TOAST_SECONDS := 3.0
+const MAX_TOASTS := 3
 const GRAVITY_DIRECTIONS := {
 	"Down": Vector2.DOWN,
 	"Up": Vector2.UP,
@@ -23,6 +24,10 @@ var health_label: Label
 var _health_fill: StyleBoxFlat
 var slowmo_button: Button
 var shop_button: Button
+var shop_panel: ShopPanel
+var combo_label: Label
+## Tools the player has already been told they can afford, this session.
+var _announced: Dictionary = {}
 var settings_panel: SettingsPanel
 var gravity_panel: PanelContainer
 var gravity_strength: HSlider
@@ -58,12 +63,21 @@ func _ready() -> void:
 	settings_panel = SettingsPanel.new()
 	root.add_child(settings_panel)
 	settings_panel.hide()
+	shop_panel = ShopPanel.new()
+	root.add_child(shop_panel)
+	shop_panel.hide()
+	for tool in ToolCatalog.all():
+		if Game.tool_status(tool.id) == &"buyable":
+			_announced[tool.id] = true
 
 	Events.money_changed.connect(_on_money_changed)
 	Events.buddy_health_changed.connect(_on_health_changed)
 	Events.notification_posted.connect(show_toast)
 	Events.tool_selected.connect(func(_id: StringName) -> void: _refresh_slots())
 	Events.progress_reset.connect(_refresh_slots)
+	Events.tool_purchased.connect(_on_tool_purchased)
+	Events.item_unlocked.connect(func(_kind: StringName, _id: StringName) -> void: _refresh_slots())
+	Events.combo_changed.connect(_on_combo_changed)
 	_on_money_changed(Game.profile.money, false)
 
 
@@ -78,15 +92,20 @@ func set_base_gravity(value: float) -> void:
 
 ## Returns true if a menu was open.
 func close_menus() -> bool:
-	var was_open := settings_panel.visible or gravity_panel.visible
+	var was_open := settings_panel.visible or gravity_panel.visible or shop_panel.visible
 	settings_panel.hide()
 	gravity_panel.hide()
+	shop_panel.hide()
 	return was_open
 
 
 func select_hotbar(number: int) -> void:
 	var index := number - 1
 	if index < 0 or index >= slots.size() or slots[index].tool_id.is_empty():
+		return
+	if not slots[index].usable:
+		var tool := ToolCatalog.get_tool(slots[index].tool_id)
+		show_toast("Get the %s in the shop first." % tool.display_name)
 		return
 	Game.select_tool(slots[index].tool_id)
 
@@ -96,6 +115,12 @@ func set_slowmo_shown(enabled: bool) -> void:
 
 
 func show_toast(text: String) -> void:
+	# Only the newest few stay up, so a burst of news can't cover the room.
+	var live := _toasts.get_children().filter(func(node: Node) -> bool: return not node.is_queued_for_deletion())
+	while live.size() >= MAX_TOASTS:
+		var oldest: Node = live.pop_front()
+		_toasts.remove_child(oldest)
+		oldest.queue_free()
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var label := Label.new()
@@ -127,6 +152,11 @@ func _build_money() -> void:
 	column.add_theme_constant_override("separation", 6)
 	column.add_child(money_label)
 	column.add_child(_build_health())
+	combo_label = Label.new()
+	combo_label.add_theme_font_size_override("font_size", 24)
+	combo_label.add_theme_color_override("font_color", UiTheme.ACCENT)
+	combo_label.hide()
+	column.add_child(combo_label)
 	panel.add_child(column)
 	root.add_child(panel)
 
@@ -173,8 +203,11 @@ func _build_top_buttons() -> void:
 	row.name = "TopButtons"
 	row.add_theme_constant_override("separation", 12)
 	root.add_child(row)
-	shop_button = _button("Shop", "The shop opens in Milestone 5.")
-	shop_button.disabled = true
+	shop_button = _button("Shop", "Buy new tools and upgrades.")
+	shop_button.pressed.connect(func() -> void:
+		settings_panel.hide()
+		gravity_panel.hide()
+		shop_panel.visible = not shop_panel.visible)
 	row.add_child(shop_button)
 	var settings_button := _button("Settings", "Volume, fullscreen and progress.")
 	settings_button.pressed.connect(func() -> void:
@@ -182,6 +215,8 @@ func _build_top_buttons() -> void:
 		settings_panel.visible = not settings_panel.visible)
 	row.add_child(settings_button)
 	row.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
+	# Grow leftward when a button's text gets longer, so nothing slides off screen.
+	row.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 
 
 func _build_room_buttons() -> void:
@@ -238,7 +273,9 @@ func _build_toolbar() -> void:
 	for index in Controls.HOTBAR_SLOTS:
 		var slot := ToolSlot.new()
 		slot.pressed.connect(func() -> void:
-			if not slot.tool_id.is_empty():
+			if not slot.usable and not slot.tool_id.is_empty():
+				shop_panel.open_at(slot.tool_id)
+			elif not slot.tool_id.is_empty():
 				Game.select_tool(slot.tool_id)
 			_refresh_slots())
 		_slot_row.add_child(slot)
@@ -307,14 +344,17 @@ func _refresh_slots() -> void:
 		var owned := tool != null and Game.can_use_tool(tool.id)
 		if owned:
 			slot.setup(tool.id, index + 1, "%s\n%s" % [tool.display_name, tool.description])
+		elif tool != null:
+			slot.setup(tool.id, index + 1, "%s  (%s in the shop)\n%s" % [tool.display_name, Fmt.money(tool.price), tool.description], false, tool.price)
 		else:
-			slot.setup("", 0, "Empty slot. Tools arrive in Milestone 4.")
+			slot.setup("", 0, "")
 		slot.set_pressed_no_signal(owned and tool.id == Game.profile.selected_tool)
 		slot.queue_redraw()
 
 
 func _on_money_changed(total: int, animate := true) -> void:
 	money_label.text = Fmt.money(total)
+	_announce_new_tools()
 	if not animate:
 		return
 	money_label.pivot_offset = money_label.size / 2
@@ -329,3 +369,47 @@ func _button(text: String, tooltip: String) -> Button:
 	button.tooltip_text = tooltip
 	button.focus_mode = Control.FOCUS_NONE
 	return button
+
+
+## Tells the player once when a new tool becomes affordable, and marks the Shop.
+func _announce_new_tools() -> void:
+	var newest: ToolDef = null
+	var any_buyable := false
+	for tool in ToolCatalog.all():
+		if Game.tool_status(tool.id) != &"buyable":
+			continue
+		any_buyable = true
+		if not _announced.has(tool.id):
+			_announced[tool.id] = true
+			if newest == null or tool.price > newest.price:
+				newest = tool
+	if shop_button != null:
+		shop_button.text = "Shop (!)" if any_buyable else "Shop"
+	if newest != null:
+		show_toast("New in the shop: %s  (%s)" % [newest.display_name, Fmt.money(newest.price)])
+
+
+func _on_tool_purchased(tool_id: StringName) -> void:
+	var tool := ToolCatalog.get_tool(String(tool_id))
+	Sfx.play(&"cha_ching", -2.0)
+	var level := Game.tool_level(String(tool_id))
+	if level == 0:
+		show_toast("Bought the %s!" % tool.display_name)
+		_category = tool.category
+		for index in category_buttons.size():
+			category_buttons[index].set_pressed_no_signal(index == tool.category)
+		Game.select_tool(String(tool_id))
+	else:
+		show_toast("%s upgraded to level %d!" % [tool.display_name, level])
+	_refresh_slots()
+	_announce_new_tools()
+
+
+func _on_combo_changed(multiplier: float) -> void:
+	combo_label.visible = multiplier > 1.01
+	combo_label.text = "COMBO  x%.2f" % multiplier
+	if combo_label.visible:
+		combo_label.pivot_offset = combo_label.size / 2
+		var tween := combo_label.create_tween()
+		tween.tween_property(combo_label, "scale", Vector2(1.2, 1.2), 0.06)
+		tween.tween_property(combo_label, "scale", Vector2.ONE, 0.15)

@@ -11,6 +11,7 @@ description = "Hold and slash. A fast enough cut takes a limb off."
 category = 1
 order = 4
 price = 2500
+requires = "bat"
 targeting = 3
 behavior = ExtResource("2")
 use_interval = 0

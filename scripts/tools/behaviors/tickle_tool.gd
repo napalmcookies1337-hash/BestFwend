@@ -30,7 +30,7 @@ func hold(at: Vector2, delta: float) -> void:
 		_wiggle = 0.0
 		for limb in buddy().part_list:
 			if limb != buddy().torso:
-				limb.angular_velocity += randf_range(-7.0, 7.0) * def.strength
+				limb.angular_velocity += randf_range(-7.0, 7.0) * power()
 		buddy().torso.linear_velocity += Vector2(randf_range(-120, 120), randf_range(-160, 0))
 	if _giggle >= GIGGLE_EVERY:
 		_giggle = 0.0

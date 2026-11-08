@@ -27,59 +27,34 @@ func _capture() -> void:
 	await _seconds(4.0)
 	var buddy := main.buddy
 
-	# Toolbar on the Boom tab with dynamite stuck to a leg and a mine nearby.
-	main.hud.category_buttons[2].pressed.emit()
-	main.hud.category_buttons[2].button_pressed = true
-	Game.select_tool("dynamite")
-	main.tools.press(buddy.parts[&"leg_l"].global_position)
-	main.place_landmine(Vector2(buddy.torso.global_position.x + 260, 400))
-	main.tools.cursor = buddy.torso.global_position + Vector2(-200, -150)
-	await _seconds(0.6)
-	await _shot("1_boom_tab_dynamite")
-	await _seconds(1.95)
-	await _shot("2_explosion")
-	await _seconds(1.5)
-	await _shot("3_missing_leg")
+	# A fresh player: only the Hand, everything else locked with prices.
+	Game.earn(380, &"shots")
+	await _seconds(0.2)
+	await _shot("1_fresh_toolbar")
 
-	main.respawn()
-	await _seconds(4.0)
-	buddy = main.buddy
-	buddy.ignite(6.0)
-	await _seconds(1.2)
-	await _shot("4_on_fire")
+	# Earning: a combo of different hits with +$$$ popups.
+	Game.buy_tool("ball")
+	Game.buy_tool("poke")
+	buddy.take_hit({"part": &"torso", "force": 3200.0, "source": &"wall", "position": buddy.torso.global_position + Vector2(-40, 0)})
+	await _seconds(0.3)
+	buddy.notice(&"poke", &"head")
+	await _seconds(0.3)
+	buddy.take_hit({"part": &"head", "force": 2600.0, "source": &"ball", "position": buddy.head.global_position})
+	await _seconds(0.3)
+	await _shot("2_money_popups_combo")
 
-	main.respawn()
-	await _seconds(4.0)
-	buddy = main.buddy
-	buddy.freeze(6.0)
-	await _seconds(1.0)
-	await _shot("5_frozen")
-
-	main.clean_up()
-	main.respawn()
-	await _seconds(4.0)
-	buddy = main.buddy
-	main.hud.category_buttons[3].pressed.emit()
-	main.hud.category_buttons[3].button_pressed = true
-	Game.select_tool("lightning")
-	main.tools.press(buddy.torso.global_position)
-	await _seconds(0.05)
-	await _shot("6_lightning")
-
-	await _seconds(2.0)
-	main.spawn_black_hole(buddy.torso.global_position + Vector2(-380, -250), 4.0)
-	for index in 6:
-		main.spawn_object(&"brick", Vector2(300 + index * 60, 200))
-	await _seconds(1.4)
-	await _shot("7_black_hole")
-
-	await _seconds(4.0)
-	main.hud.category_buttons[1].pressed.emit()
-	main.hud.category_buttons[1].button_pressed = true
-	Game.select_tool("katana")
-	main.tools.cursor = buddy.torso.global_position + Vector2(150, -120)
-	await _seconds(0.1)
-	await _shot("8_katana_cursor")
+	# The shop, part way through: some owned, some buyable, some locked.
+	Game.earn(5200, &"shots")
+	Game.buy_tool("brick")
+	Game.buy_tool("bat")
+	Game.upgrade_tool("bat")
+	main.hud.shop_panel.show_category(1)
+	main.hud.shop_panel.show()
+	await _seconds(0.3)
+	await _shot("3_shop_throw_tab")
+	main.hud.shop_panel.show_category(2)
+	await _seconds(0.2)
+	await _shot("4_shop_boom_tab")
 	print("shots done")
 	get_tree().quit()
 

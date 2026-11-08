@@ -25,6 +25,7 @@ var blood: Blood
 var fx: Fx
 var grabber: Grabber
 var tools: ToolUser
+var rewards: Rewards
 var hud: Hud
 var camera: Camera2D
 var slowmo := false
@@ -58,6 +59,9 @@ func _ready() -> void:
 	tools = ToolUser.new()
 	tools.sandbox = self
 	add_child(tools)
+	rewards = Rewards.new()
+	rewards.sandbox = self
+	add_child(rewards)
 	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
@@ -96,6 +100,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		Game.earn(1000, &"dev")
 	elif event.is_action_pressed("dev_ball") and OS.is_debug_build():
 		spawn_test_ball(get_global_mouse_position())
+	elif event.is_action_pressed("dev_unlock") and OS.is_debug_build():
+		Game.unlock_all_tools()
+		Events.notification_posted.emit("Debug: every tool unlocked.")
 	else:
 		for number in range(1, Controls.HOTBAR_SLOTS + 1):
 			if event.is_action_pressed("tool_%d" % number):
@@ -158,9 +165,10 @@ func spawn_test_ball(at: Vector2) -> TestBall:
 
 
 ## Puts a WorldObject of `kind` into the room at `at`.
-func spawn_object(kind: StringName, at: Vector2, velocity := Vector2.ZERO) -> WorldObject:
+func spawn_object(kind: StringName, at: Vector2, velocity := Vector2.ZERO, power := 1.0) -> WorldObject:
 	var object := WorldObject.new()
 	object.setup(kind, self)
+	object.power_scale = power
 	object.position = at.clamp(Vector2(50, 50), room.interior().end - Vector2(50, 50))
 	object.linear_velocity = velocity
 	_track(object)
@@ -170,7 +178,7 @@ func spawn_object(kind: StringName, at: Vector2, velocity := Vector2.ZERO) -> Wo
 	return object
 
 
-func place_landmine(at: Vector2) -> Landmine:
+func place_landmine(at: Vector2, power := 1.0) -> Landmine:
 	var down := gravity.normalized() if gravity.length() > 1.0 else Vector2.DOWN
 	var query := PhysicsRayQueryParameters2D.create(at, at + down * 2000.0, Layers.WALLS)
 	var hit := get_world_2d().direct_space_state.intersect_ray(query)
@@ -178,6 +186,7 @@ func place_landmine(at: Vector2) -> Landmine:
 	var up: Vector2 = hit.get("normal", -down)
 	var mine := Landmine.new()
 	mine.setup(self, up)
+	mine.power_scale = power
 	mine.position = spot
 	_track(mine)
 	world.add_child(mine)
@@ -185,9 +194,10 @@ func place_landmine(at: Vector2) -> Landmine:
 	return mine
 
 
-func stick_dynamite(at: Vector2, part: BuddyPart) -> StickyDynamite:
+func stick_dynamite(at: Vector2, part: BuddyPart, power := 1.0) -> StickyDynamite:
 	var stick := StickyDynamite.new()
 	stick.setup(self, at, part)
+	stick.power_scale = power
 	_track(stick)
 	world.add_child(stick)
 	_warn_buddy(at)

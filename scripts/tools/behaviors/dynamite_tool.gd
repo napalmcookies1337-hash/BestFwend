@@ -7,5 +7,5 @@ func press(at: Vector2) -> void:
 	var part := part_at(at)
 	if part == null and not sandbox.room.interior().has_point(at):
 		return
-	sandbox.stick_dynamite(at, part)
+	sandbox.stick_dynamite(at, part, power())
 	Sfx.play(&"fuse", -6.0)

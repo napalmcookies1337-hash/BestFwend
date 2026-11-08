@@ -30,6 +30,8 @@ signal tool_used(tool_id: StringName, at: Vector2)
 signal money_earned(amount: int, reason: StringName)
 signal money_spent(amount: int, reason: StringName)
 signal money_changed(total: int)
+## The variety combo multiplier changed (1.0 means no combo).
+signal combo_changed(multiplier: float)
 signal tool_purchased(tool_id: StringName)
 signal item_unlocked(kind: StringName, item_id: StringName)
 

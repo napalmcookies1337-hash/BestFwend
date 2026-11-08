@@ -30,7 +30,7 @@ func fire(at: Vector2) -> void:
 	# The bullet comes from in front of the screen, so it pushes a little in the
 	# direction you're sweeping the gun, plus a random wobble.
 	var direction := (_aim + Vector2(randf_range(-0.4, 0.4), randf_range(-0.6, 0.2))).normalized()
-	var force := float(param("force", 900.0)) * def.strength
+	var force := float(param("force", 900.0)) * power()
 	if body == null:
 		if sandbox.room.interior().has_point(at):
 			sandbox.room.decals.hole(at)
@@ -39,7 +39,7 @@ func fire(at: Vector2) -> void:
 	body.linear_velocity += direction * force
 	if body is BuddyPart and not (body as BuddyPart).detached:
 		var part := body as BuddyPart
-		buddy().take_hit({"part": part.part_name, "force": force, "damage": float(param("damage", 12.0)) * def.strength,
+		buddy().take_hit({"part": part.part_name, "force": force, "damage": float(param("damage", 12.0)) * power(),
 				"source": &"pistol", "normal": -direction, "position": at})
 
 

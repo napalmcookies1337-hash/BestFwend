@@ -10,6 +10,7 @@ var sandbox: Node
 ## Points away from the surface it sits on.
 var up := Vector2.UP
 var armed := false
+var power_scale := 1.0
 var _age := 0.0
 var _done := false
 
@@ -41,7 +42,7 @@ func detonate() -> void:
 	if _done:
 		return
 	_done = true
-	sandbox.explode(global_position + up * 20.0, BLAST[0], BLAST[1], BLAST[2], BLAST[3], &"landmine")
+	sandbox.explode(global_position + up * 20.0, BLAST[0] * sqrt(power_scale), BLAST[1] * power_scale, BLAST[2] * power_scale, BLAST[3], &"landmine")
 	queue_free()
 
 

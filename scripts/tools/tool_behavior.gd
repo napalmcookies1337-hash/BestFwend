@@ -26,6 +26,11 @@ func draw_cursor(canvas: CanvasItem, at: Vector2) -> void:
 	ToolArt.draw_icon(canvas, def.id, at + Vector2(34, 34), 46.0, Color.WHITE)
 
 
+## The tool's strength including its upgrades.
+func power() -> float:
+	return def.strength * Game.tool_power(def.id)
+
+
 func param(key: String, fallback: Variant) -> Variant:
 	return def.params.get(key, fallback)
 

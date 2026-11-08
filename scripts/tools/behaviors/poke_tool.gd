@@ -10,7 +10,7 @@ func press(at: Vector2) -> void:
 	var push := (part.global_position - at).normalized()
 	if push == Vector2.ZERO:
 		push = Vector2.RIGHT
-	part.linear_velocity += push * float(param("push", 380.0)) * def.strength
+	part.linear_velocity += push * float(param("push", 380.0)) * power()
 	part.kick_squash(push, 900.0)
 	buddy().notice(&"poke", part.part_name)
 	Sfx.play(&"pop", -4.0, 1.3)

@@ -11,6 +11,7 @@ description = "Appears in your hand. Drag and let go to throw."
 category = 1
 order = 0
 price = 100
+requires = ""
 targeting = 1
 behavior = ExtResource("2")
 use_interval = 0

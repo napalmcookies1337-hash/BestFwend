@@ -117,14 +117,95 @@ func spend(amount: int, reason: StringName) -> bool:
 	return true
 
 
-## Until the shop opens (Milestone 5), every tool is free to try.
-const TOOLS_FREE := true
+## When true every tool is usable without buying it (used before the shop existed).
+const TOOLS_FREE := false
+const MAX_UPGRADE := 3
+## Each upgrade level adds this much power: force, blast, damage or duration.
+const UPGRADE_STEP := 0.25
+## Upgrades cost UPGRADE_PRICE x 2^level times the tool's price, at least this base.
+const UPGRADE_PRICE := 0.6
+const MIN_UPGRADE_BASE := 400
 
 
 func can_use_tool(tool_id: String) -> bool:
 	if ToolCatalog.get_tool(tool_id) == null:
 		return false
 	return TOOLS_FREE or profile.owned_tools.has(tool_id)
+
+
+func owns_tool(tool_id: String) -> bool:
+	return profile.owned_tools.has(tool_id)
+
+
+## &"owned", &"locked" (needs another tool first), &"too_expensive" or &"buyable".
+func tool_status(tool_id: String) -> StringName:
+	var tool := ToolCatalog.get_tool(tool_id)
+	if tool == null:
+		return &"locked"
+	if owns_tool(tool_id):
+		return &"owned"
+	if not tool.requires.is_empty() and not owns_tool(tool.requires):
+		return &"locked"
+	if profile.money < tool.price:
+		return &"too_expensive"
+	return &"buyable"
+
+
+func buy_tool(tool_id: String) -> bool:
+	if tool_status(tool_id) != &"buyable":
+		return false
+	var tool := ToolCatalog.get_tool(tool_id)
+	if not spend(tool.price, &"shop"):
+		return false
+	profile.owned_tools.append(tool_id)
+	mark_dirty()
+	Events.tool_purchased.emit(StringName(tool_id))
+	Events.item_unlocked.emit(&"tool", StringName(tool_id))
+	save_now()
+	return true
+
+
+func tool_level(tool_id: String) -> int:
+	return clampi(int(profile.tool_upgrades.get(tool_id, 0)), 0, MAX_UPGRADE)
+
+
+## Price of the next upgrade, or -1 when maxed out or not owned.
+func upgrade_cost(tool_id: String) -> int:
+	var tool := ToolCatalog.get_tool(tool_id)
+	var level := tool_level(tool_id)
+	if tool == null or not owns_tool(tool_id) or level >= MAX_UPGRADE:
+		return -1
+	return roundi(maxi(tool.price, MIN_UPGRADE_BASE) * UPGRADE_PRICE * pow(2.0, level))
+
+
+func upgrade_tool(tool_id: String) -> bool:
+	var cost := upgrade_cost(tool_id)
+	if cost < 0 or not spend(cost, &"upgrade"):
+		return false
+	profile.tool_upgrades[tool_id] = tool_level(tool_id) + 1
+	mark_dirty()
+	Events.tool_purchased.emit(StringName(tool_id))
+	save_now()
+	return true
+
+
+## Debug cheat and test helper: owns every tool.
+func unlock_all_tools() -> void:
+	for tool in ToolCatalog.all():
+		if not profile.owned_tools.has(tool.id):
+			profile.owned_tools.append(tool.id)
+	mark_dirty()
+	Events.item_unlocked.emit(&"tool", &"all")
+
+
+## How much stronger upgrades make a tool: 1.0, 1.25, 1.5, 1.75.
+func tool_power(tool_id: String) -> float:
+	return 1.0 + UPGRADE_STEP * tool_level(tool_id)
+
+
+## Applied to every payout. Prestige (Milestone 7) raises it.
+func reward_multiplier() -> float:
+	return 1.0
 
 
 func select_tool(tool_id: String) -> bool:

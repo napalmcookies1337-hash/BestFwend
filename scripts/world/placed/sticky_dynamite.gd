@@ -11,6 +11,7 @@ var sandbox: Node
 var target: BuddyPart
 var local_offset := Vector2.ZERO
 var fuse := FUSE
+var power_scale := 1.0
 var _done := false
 
 
@@ -37,7 +38,7 @@ func detonate() -> void:
 	var limb := &""
 	if is_instance_valid(target) and not target.detached:
 		limb = target.part_name
-	sandbox.explode(global_position, BLAST[0], BLAST[1], BLAST[2], BLAST[3], &"dynamite", limb)
+	sandbox.explode(global_position, BLAST[0] * sqrt(power_scale), BLAST[1] * power_scale, BLAST[2] * power_scale, BLAST[3], &"dynamite", limb)
 	queue_free()
 
 

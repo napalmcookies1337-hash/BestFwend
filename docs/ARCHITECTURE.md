@@ -46,7 +46,20 @@ Declared in [events.gd](../scripts/core/events.gd), many ahead of the milestone 
 
 ## Money
 
-`Game.earn(amount, reason)` and `Game.spend(amount, reason) -> bool`. Both emit events and mark the save dirty. Amounts are ints; `Fmt.money` shows them as `$$$ 1,234`. The reward formula (force, variety combo, diminishing repeats) arrives in Milestone 5 and will call `earn`.
+`Game.earn(amount, reason)` and `Game.spend(amount, reason) -> bool`. Both emit events and mark the save dirty. Amounts are ints; `Fmt.money` shows them as `$$$ 1,234`.
+
+- **What pays** is [economy.gd](../scripts/core/economy.gd): plain rules, testable on their own. A hit is worth `damage x 1.6` plus a little for force. Each different tool used in the last 10 s adds +0.25 to the combo (max x2.5). Repeating one tool tires it (x0.88 per use, down to x0.25), recovering 1 level per second; hits within 0.4 s count as one use, so a slam that hits five parts isn't penalised. Limb lost, knockout and shatter pay bonuses. Gentle actions (poke, tickle) pay a little.
+- **Who gets credit:** `Economy.tool_for(info)` maps a hit to a tool: wall slams are the Hand, explosions carry their `tool`, object kinds map to tools.
+- [rewards.gd](../scripts/world/rewards.gd) listens for hits and bonuses, pays through `Game.earn`, merges hits close together into one floating `+$$$` popup, and emits `Events.combo_changed` for the HUD.
+- `Game.reward_multiplier()` scales every payout (prestige in Milestone 7).
+- `tests/probe_economy.gd` prints $$$ per minute under different play styles; `test_economy_pacing` keeps it in range.
+
+## Shop and ownership
+
+- `Game.tool_status(id)`: owned, locked (its `requires` tool isn't owned), too_expensive, or buyable. `Game.buy_tool(id)` and `Game.upgrade_tool(id)` spend, save, and emit `tool_purchased` (the HUD then selects a new tool and plays a cha-ching).
+- Upgrades: 3 levels, each +25% power. `ToolBehavior.power()` applies them: force, damage, durations, telekinesis reach, and explosion push/damage (radius grows with the square root). Explosive objects carry `power_scale`. The Hand's upgrade ("Strong Arm") throws harder.
+- `Game.TOOLS_FREE` (now false) would make every tool usable without buying.
+- The toolbar shows unowned tools dimmed with a lock and price; clicking one opens the shop on its tab. The HUD announces each newly affordable tool once per session and marks the Shop button "(!)".
 
 ## Tools
 

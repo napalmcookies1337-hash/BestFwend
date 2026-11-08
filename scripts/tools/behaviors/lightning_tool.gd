@@ -25,5 +25,5 @@ func press(at: Vector2) -> void:
 	if part == null:
 		return
 	buddy().shock(float(param("shock_seconds", 1.0)))
-	buddy().take_hit({"part": part.part_name, "force": 1200.0, "damage": float(param("damage", 30.0)) * def.strength,
+	buddy().take_hit({"part": part.part_name, "force": 1200.0, "damage": float(param("damage", 30.0)) * power(),
 			"source": &"lightning", "bleed": false, "mark": BuddyPart.Mark.SOOT, "position": target})

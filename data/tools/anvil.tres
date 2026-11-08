@@ -17,4 +17,4 @@ behavior = ExtResource("2")
 use_interval = 0
 duration = 0
 strength = 1
-params = {"kind": "anvil", "speed": 400.0}
+params = {"kind": "anvil", "speed": 1100.0}

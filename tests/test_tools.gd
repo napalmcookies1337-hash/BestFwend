@@ -126,6 +126,31 @@ func test_anvil_drops_on_it() -> bool:
 	return true
 
 
+func test_anvil_is_heavy_in_the_hand() -> bool:
+	var ball := main.spawn_object(&"ball", Vector2(400, 600))
+	var anvil := main.spawn_object(&"anvil", Vector2(900, 600))
+	await _seconds(1.0)
+	var lag := {}
+	for object: WorldObject in [ball, anvil]:
+		var start := object.global_position
+		main.grabber.hold(object, start, MOUSE_BUTTON_RIGHT)
+		main.grabber.target = start + Vector2(0, -300)
+		await _seconds(0.35)
+		lag[object.kind] = (start + Vector2(0, -300)).distance_to(object.global_position)
+		main.grabber.release()
+		await _seconds(1.0)
+	check(lag[&"anvil"] > lag[&"ball"] + 60.0, "the anvil lags far behind the cursor (%.0f vs ball %.0f)" % [lag[&"anvil"], lag[&"ball"]])
+	return true
+
+
+func test_anvil_falls_fast() -> bool:
+	_use("anvil", Vector2(300, 700))
+	var anvil: WorldObject = main.objects.back()
+	await _seconds(0.2)
+	check(anvil.linear_velocity.y > 1400.0, "already falling fast (%.0f)" % anvil.linear_velocity.y)
+	return true
+
+
 func test_bat_swing() -> bool:
 	await _swipe("bat", buddy.torso.global_position + Vector2(-300, 0), buddy.torso.global_position + Vector2(300, 0), 0.25)
 	var bat_hits := hits.filter(func(hit: Dictionary) -> bool: return hit["source"] == &"bat")

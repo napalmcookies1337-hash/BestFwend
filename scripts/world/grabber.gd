@@ -18,6 +18,11 @@ const SPIN_DAMPING := 3.0
 const MAX_THROW_SPEED := 5200.0
 const THROW_BOOST := 1.1
 const TARGET_MARGIN := 30.0
+## Objects heavier than this feel heavy in the hand.
+const HEAVY_MASS := 5.0
+const HEAVY_MIN := 0.15
+## How much of its weight the hand still holds up at its heaviest.
+const HEAVY_SAG := 0.8
 ## A grab released this quickly, without moving the cursor, counts as a click.
 const CLICK_TIME := 0.25
 const CLICK_DRIFT := 14.0
@@ -193,5 +198,10 @@ func _physics_process(delta: float) -> void:
 			held.apply_force(accel * mass * (1.0 - ROOT_SHARE), lever)
 			held_buddy.torso.apply_central_force(accel * mass * ROOT_SHARE)
 	else:
-		held.apply_force((accel - gravity) * held.mass, lever)
+		# Heavy things lag behind the cursor and sag a little, so an anvil feels like
+		# an anvil. heft is 1 for light objects and falls toward HEAVY_MIN.
+		var heft := clampf(HEAVY_MASS / held.mass, HEAVY_MIN, 1.0)
+		var pull := accel.limit_length(MAX_ACCEL * heft) * sqrt(heft)
+		var support := gravity * held.gravity_scale * lerpf(HEAVY_SAG, 1.0, heft)
+		held.apply_force((pull - support) * held.mass, lever)
 	held.angular_velocity *= maxf(1.0 - SPIN_DAMPING * delta, 0.0)

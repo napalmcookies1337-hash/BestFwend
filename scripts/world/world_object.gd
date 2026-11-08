@@ -13,7 +13,7 @@ const KINDS := {
 	&"brick": {"shape": "rect", "size": Vector2(78, 38), "mass": 4.0, "bounce": 0.05, "friction": 0.9,
 		"color": Color("b5503c"), "impact_scale": 1.3},
 	&"anvil": {"shape": "anvil", "size": Vector2(120, 66), "mass": 30.0, "bounce": 0.0, "friction": 0.9,
-		"color": Color("4b4f5c"), "impact_scale": 2.2},
+		"color": Color("4b4f5c"), "impact_scale": 2.2, "gravity": 1.8},
 	&"grenade": {"shape": "circle", "size": Vector2(20, 0), "mass": 0.7, "bounce": 0.3, "friction": 0.7,
 		"color": Color("4f6b2e"), "fuse": 3.0, "blast": [280.0, 2600.0, 55.0, 0.5]},
 	&"rocket": {"shape": "capsule", "size": Vector2(13, 64), "mass": 2.0, "bounce": 0.0, "friction": 0.2,

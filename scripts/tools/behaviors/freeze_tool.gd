@@ -9,4 +9,4 @@ func press(at: Vector2) -> void:
 	Sfx.play(&"freeze", -2.0)
 	var part := part_near(at, 60.0)
 	if part != null:
-		buddy().freeze(def.duration * power())
+		owner_of(part).freeze(def.duration * power())

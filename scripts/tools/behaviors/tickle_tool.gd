@@ -22,19 +22,19 @@ func hold(at: Vector2, delta: float) -> void:
 	var speed := at.distance_to(_last) / maxf(delta, 0.0001)
 	_last = at
 	var part := part_at(at)
-	if part == null or speed < MIN_SPEED or buddy().is_knocked_out:
+	if part == null or speed < MIN_SPEED or owner_of(part).is_knocked_out:
 		return
 	_wiggle += delta
 	_giggle += delta
 	if _wiggle >= WIGGLE_EVERY:
 		_wiggle = 0.0
-		for limb in buddy().part_list:
-			if limb != buddy().torso:
+		for limb in owner_of(part).part_list:
+			if limb != owner_of(part).torso:
 				limb.angular_velocity += randf_range(-7.0, 7.0) * power()
-		buddy().torso.linear_velocity += Vector2(randf_range(-120, 120), randf_range(-160, 0))
+		owner_of(part).torso.linear_velocity += Vector2(randf_range(-120, 120), randf_range(-160, 0))
 	if _giggle >= GIGGLE_EVERY:
 		_giggle = 0.0
-		buddy().notice(&"tickle", part.part_name)
+		owner_of(part).notice(&"tickle", part.part_name)
 
 
 func draw_cursor(canvas: CanvasItem, at: Vector2) -> void:

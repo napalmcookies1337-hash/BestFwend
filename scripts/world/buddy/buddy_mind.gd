@@ -9,7 +9,7 @@ extends Node
 
 ## Higher interrupts lower. Below CHATTY, lines also wait for a short gap.
 const PRIORITY := {
-	&"spawn": 3, &"respawn": 3, &"reformed": 3, &"new_look": 3, &"new_room": 3, &"grabbed": 3, &"grabbed_head": 3, &"grabbed_limb": 3,
+	&"spawn": 3, &"respawn": 3, &"reformed": 3, &"new_look": 3, &"new_room": 3, &"zombie": 2, &"grabbed": 3, &"grabbed_head": 3, &"grabbed_limb": 3,
 	&"dangling": 2, &"upside_down": 3, &"thrown": 4, &"hit_light": 1, &"hit_medium": 3,
 	&"hit_hard": 5, &"hit_head": 5, &"hit_object": 4, &"hit_ceiling": 4, &"survived": 2,
 	&"getting_up": 1, &"low_health": 2, &"revived": 5, &"healed": 2, &"idle": 0, &"bored": 0,
@@ -47,7 +47,7 @@ const COOLDOWN := {
 	&"dangling": 8.0, &"upside_down": 6.0, &"survived": 5.0, &"low_health": 10.0, &"idle": 0.0,
 	&"bored": 0.0, &"dizzy": 6.0, &"poked": 2.0, &"slapped": 1.0, &"tickled": 2.5, &"on_fire": 2.2,
 	&"shot": 1.0, &"batted": 1.0, &"stabbed": 1.0, &"lost_arm": 0.0, &"lost_leg": 0.0, &"legless": 12.0,
-	&"bomb_near": 3.0, &"blown_up": 1.0,
+	&"bomb_near": 3.0, &"blown_up": 1.0, &"zombie": 3.0,
 }
 const DEFAULT_COOLDOWN := 4.0
 const GAP := 1.2
@@ -104,6 +104,10 @@ func _ready() -> void:
 
 ## Says a line for `context` if allowed now. Returns true if it spoke.
 func say(context: StringName, chance := 1.0) -> bool:
+	# Zombies only ever groan, and not every time, or five of them never shut up.
+	if buddy.is_zombie:
+		context = &"zombie"
+		chance *= 0.35
 	if buddy.is_knocked_out or not BuddyLines.LINES.has(context):
 		return false
 	var priority: int = PRIORITY.get(context, 1)
@@ -202,7 +206,7 @@ func _track_held(delta: float, state: Buddy.State) -> void:
 func _track_health() -> void:
 	if buddy.health < LOW_HEALTH + 20.0:
 		_was_low = true
-	elif _was_low and buddy.health >= Buddy.MAX_HEALTH:
+	elif _was_low and buddy.health >= buddy.max_health:
 		_was_low = false
 		say(&"healed")
 

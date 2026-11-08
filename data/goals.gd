@@ -5,7 +5,7 @@ extends RefCounted
 ## Edit freely: ids must stay stable once shipped, since saves refer to them.
 
 ## Stats that keep the highest value instead of a running total.
-const MAX_STATS := ["biggest_hit", "max_combo", "longest_flight", "best_ricochet", "best_toss", "best_frenzy"]
+const MAX_STATS := ["biggest_hit", "max_combo", "longest_flight", "best_zombies", "best_toss", "best_frenzy"]
 
 ## id: [name, description, stat, goal, reward $$$]
 const ACHIEVEMENTS := {
@@ -30,7 +30,7 @@ const ACHIEVEMENTS := {
 	"earned_10k": ["Ten Grand", "Earn 10,000 $$$ in total.", "earned", 10000, 500],
 	"earned_250k": ["Fat Stacks", "Earn 250,000 $$$ in total.", "earned", 250000, 5000],
 	"played_30": ["Dedicated", "Play for 30 minutes.", "seconds_played", 1800, 500],
-	"ricochet": ["Pinball Wizard", "Score 100 m in Ricochet.", "best_ricochet", 100, 800],
+	"zombies": ["Zombie Slayer", "Kill 25 zombies in one round of Zombie Mode.", "best_zombies", 25, 1000],
 	"toss": ["Sharpshooter", "Hit 10 targets in Target Toss.", "best_toss", 10, 800],
 	"frenzy": ["Unhinged", "Deal 1,000 damage in Impact Frenzy.", "best_frenzy", 1000, 800],
 }

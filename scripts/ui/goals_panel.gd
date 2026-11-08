@@ -1,11 +1,8 @@
 class_name GoalsPanel
 extends PanelContainer
-## Optional goals: achievements, today's challenges, minigames and prestige.
-## Reads everything from Game; playing a minigame is asked for through a signal.
+## Optional goals: achievements, today's challenges and prestige. Reads everything from Game.
 
-signal minigame_chosen(minigame_id: StringName)
-
-const PAGES := ["Achievements", "Daily", "Minigames", "Prestige"]
+const PAGES := ["Achievements", "Daily", "Prestige"]
 
 var page := 0
 var tabs: Array[Button] = []
@@ -57,7 +54,7 @@ func _ready() -> void:
 	for event: Signal in [Events.achievement_unlocked, Events.daily_completed, Events.daily_refreshed, Events.prestiged]:
 		Events.listen(self, event, func(_value: Variant = null) -> void: _rebuild_if_open())
 	Events.listen(self, Events.money_changed, func(_total: int) -> void:
-		if visible and page == 3:
+		if visible and page == 2:
 			_rebuild())
 	visibility_changed.connect(func() -> void:
 		if visible:
@@ -95,8 +92,6 @@ func _rebuild() -> void:
 			_build_achievements()
 		1:
 			_build_daily()
-		2:
-			_build_minigames()
 		_:
 			_build_prestige()
 	offset_left = 0
@@ -166,37 +161,6 @@ func _build_daily() -> void:
 		row.add_child(_label("+" + Fmt.money(challenge["reward"]), 22, UiTheme.MONEY))
 		var share := clampf(float(challenge["progress"]) / float(challenge["goal"]), 0.0, 1.0)
 		column.add_child(_bar(share, 14.0))
-		body.add_child(card)
-
-
-func _build_minigames() -> void:
-	for minigame_id: StringName in Minigames.LIST:
-		var spec: Array = Minigames.LIST[minigame_id]
-		var card := _card()
-		card.custom_minimum_size = Vector2(720, 0)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 16)
-		card.add_child(row)
-		var column := VBoxContainer.new()
-		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(column)
-		column.add_child(_label(spec[1], 28, UiTheme.TEXT))
-		var how := _label(spec[2], 17, UiTheme.MUTED)
-		how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		how.custom_minimum_size.x = 500
-		column.add_child(how)
-		var best := float(Game.profile.best_scores.get(String(minigame_id), 0.0))
-		column.add_child(_label("Best: " + (Minigames.best_text(minigame_id, best) if best > 0.0 else "none yet"), 18, UiTheme.ACCENT))
-		var play := Button.new()
-		play.text = "Play"
-		play.focus_mode = Control.FOCUS_NONE
-		play.custom_minimum_size = Vector2(140, 60)
-		play.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		play.add_theme_font_size_override("font_size", 26)
-		play.pressed.connect(func() -> void:
-			hide()
-			minigame_chosen.emit(minigame_id))
-		row.add_child(play)
 		body.add_child(card)
 
 

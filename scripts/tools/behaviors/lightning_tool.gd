@@ -24,6 +24,6 @@ func press(at: Vector2) -> void:
 	Sfx.play(&"zap", 0.0)
 	if part == null:
 		return
-	buddy().shock(float(param("shock_seconds", 1.0)))
-	buddy().take_hit({"part": part.part_name, "force": 1200.0, "damage": float(param("damage", 30.0)) * power(),
+	owner_of(part).shock(float(param("shock_seconds", 1.0)))
+	owner_of(part).take_hit({"part": part.part_name, "force": 1200.0, "damage": float(param("damage", 30.0)) * power(),
 			"source": &"lightning", "bleed": false, "mark": BuddyPart.Mark.SOOT, "position": target})

@@ -68,6 +68,8 @@ func pick_expression() -> StringName:
 		return &"scream"
 	if buddy.hurt_time > 0.0:
 		return &"ouch"
+	if buddy.is_zombie:
+		return &"zombie"
 	if buddy.face_override != &"":
 		return buddy.face_override
 	if buddy.state == Buddy.State.GRABBED:
@@ -209,7 +211,7 @@ func _draw_face(xf: Transform2D) -> void:
 	var gaze := look.normalized() * minf(look.length() / 40.0, 6.0)
 	if expression == &"frozen" or expression == &"shocked":
 		gaze = Vector2.ZERO
-	var closed_eyes := [&"ouch", &"ko", &"dizzy", &"yawn", &"laugh"].has(expression)
+	var closed_eyes := [&"ouch", &"ko", &"dizzy", &"yawn", &"laugh", &"zombie"].has(expression)
 	var blinking := _blink_left > 0.0 and not closed_eyes and not [&"scream", &"frozen", &"shocked"].has(expression)
 	for side: float in [-1.0, 1.0]:
 		draw_set_transform_matrix(xf)
@@ -231,6 +233,17 @@ func _draw_face(xf: Transform2D) -> void:
 				draw_arc(eye + Vector2(0, -2), 9.0, 0.15 * PI, 0.85 * PI, 10, PUPIL, 4.0, true)
 			&"laugh":
 				draw_arc(eye + Vector2(0, 4), 10.0, 1.15 * PI, 1.85 * PI, 10, PUPIL, 4.5, true)
+			&"zombie":
+				# One bulging eye, one droopy one, both with tiny dead pupils.
+				var radii := Vector2(17, 21) if side < 0.0 else Vector2(12, 13)
+				var spot := eye + (Vector2(-2, -4) if side < 0.0 else Vector2(2, 4))
+				_ellipse(xf, spot, radii + Vector2.ONE * 3.0, OUTLINE_COLOR)
+				_ellipse(xf, spot, radii, Color("f2f0c8"))
+				draw_set_transform_matrix(xf)
+				draw_circle(spot + gaze * 0.4, 3.0, Color("6b1f1f"))
+				if side > 0.0:
+					draw_rect(Rect2(spot + Vector2(-radii.x - 3, -radii.y - 4), Vector2(radii.x * 2 + 6, radii.y + 4)), buddy.color)
+					draw_line(spot + Vector2(-radii.x, 0), spot + Vector2(radii.x, 0), PUPIL, 3.0, true)
 			_:
 				_draw_open_eye(xf, eye, side, gaze, blinking)
 	draw_set_transform_matrix(xf)
@@ -314,6 +327,13 @@ func _draw_mouth(xf: Transform2D, mouth: Vector2) -> void:
 			_ellipse(xf, mouth + Vector2(5, 7), Vector2(6, 8), TONGUE)
 		&"angry":
 			draw_arc(mouth + Vector2(0, 8), 12.0, 1.2 * PI, 1.8 * PI, 10, MOUTH, 5.0, true)
+		&"zombie":
+			# A slack, toothy gape.
+			_ellipse(xf, mouth + Vector2(2, 6), Vector2(17, 11), MOUTH)
+			draw_set_transform_matrix(xf)
+			for tooth in 4:
+				var x := mouth.x - 10.0 + tooth * 7.0
+				draw_colored_polygon(PackedVector2Array([Vector2(x, mouth.y - 3), Vector2(x + 5, mouth.y - 3), Vector2(x + 2.5, mouth.y + 4)]), Color("e8e2b0"))
 		_:
 			draw_line(mouth + Vector2(-10, 2), mouth + Vector2(10, -1), MOUTH, 4.0, true)
 

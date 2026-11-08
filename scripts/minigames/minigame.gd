@@ -13,6 +13,8 @@ var title := ""
 var time_left := -1.0
 var score := 0.0
 var hint := ""
+## Removes your Buddy for the duration and brings it back after (Zombie Mode).
+var replaces_buddy := false
 var _update := 0.0
 var _done := false
 

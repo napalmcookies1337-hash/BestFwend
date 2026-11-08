@@ -5,8 +5,8 @@ extends Node
 
 ## id: [script, title, how to play]
 const LIST := {
-	&"ricochet": [preload("res://scripts/minigames/ricochet.gd"), "Ricochet",
-		"One throw. Your score is how far your fwend travels before it stops. Bounce it off everything!"],
+	&"zombies": [preload("res://scripts/minigames/zombie_mode.gd"), "Zombie Mode",
+		"2 minutes. Your fwend's gone zombie, and it brought friends. Five shamble after your cursor at a time; kill them all and five more come. Any tools go."],
 	&"toss": [preload("res://scripts/minigames/target_toss.gd"), "Target Toss",
 		"45 seconds. Throw your fwend into the bullseyes. Every hit moves the target."],
 	&"frenzy": [preload("res://scripts/minigames/frenzy.gd"), "Impact Frenzy",
@@ -19,6 +19,11 @@ var current: Minigame
 
 func is_running() -> bool:
 	return current != null
+
+
+## True while a minigame has taken your Buddy out of the room.
+func replaces_buddy() -> bool:
+	return current != null and current.replaces_buddy
 
 
 func start(minigame_id: StringName) -> Minigame:
@@ -45,9 +50,13 @@ func start(minigame_id: StringName) -> Minigame:
 func stop() -> void:
 	if current == null:
 		return
+	var brings_back := current.replaces_buddy
 	current.cleanup()
 	current.queue_free()
 	current = null
+	if brings_back:
+		sandbox.clean_up(true)
+		sandbox.respawn()
 
 
 ## Called by a minigame when it's over.
@@ -74,8 +83,8 @@ func finish(game: Minigame) -> void:
 
 static func best_text(minigame_id: StringName, value: float) -> String:
 	match minigame_id:
-		&"ricochet":
-			return "%.1f m" % value
+		&"zombies":
+			return "%d kills" % roundi(value)
 		&"toss":
 			return "%d targets" % roundi(value)
 		_:

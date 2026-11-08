@@ -14,9 +14,9 @@ func press(at: Vector2) -> void:
 	var direction := Vector2(side, -0.35).normalized()
 	var force := float(param("force", 1750.0)) * power()
 	part.linear_velocity += direction * force * 0.8
-	buddy().take_hit({"part": part.part_name, "force": force, "source": &"slap", "bleed": false,
+	owner_of(part).take_hit({"part": part.part_name, "force": force, "source": &"slap", "bleed": false,
 			"normal": -direction, "position": at})
-	buddy().notice(&"slap", part.part_name)
+	owner_of(part).notice(&"slap", part.part_name)
 	sandbox.add_shake(6.0)
 
 

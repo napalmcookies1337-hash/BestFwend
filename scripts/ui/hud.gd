@@ -30,6 +30,8 @@ var shop_button: Button
 var shop_panel: ShopPanel
 var goals_button: Button
 var goals_panel: GoalsPanel
+var minigames_button: Button
+var minigames_panel: MinigamesPanel
 var minigame_hud: MinigameHud
 var combo_label: Label
 ## Tools the player has already been told they can afford, this session.
@@ -75,7 +77,10 @@ func _ready() -> void:
 	goals_panel = GoalsPanel.new()
 	root.add_child(goals_panel)
 	goals_panel.hide()
-	goals_panel.minigame_chosen.connect(minigame_requested.emit)
+	minigames_panel = MinigamesPanel.new()
+	root.add_child(minigames_panel)
+	minigames_panel.hide()
+	minigames_panel.minigame_chosen.connect(minigame_requested.emit)
 	minigame_hud = MinigameHud.new()
 	root.add_child(minigame_hud)
 	minigame_hud.quit_pressed.connect(minigame_quit.emit)
@@ -114,7 +119,9 @@ func set_base_gravity(value: float) -> void:
 
 ## Returns true if a menu was open.
 func close_menus() -> bool:
-	var was_open := settings_panel.visible or gravity_panel.visible or shop_panel.visible or goals_panel.visible
+	var was_open := settings_panel.visible or gravity_panel.visible or shop_panel.visible or goals_panel.visible \
+			or minigames_panel.visible
+	minigames_panel.hide()
 	settings_panel.hide()
 	gravity_panel.hide()
 	shop_panel.hide()
@@ -238,6 +245,12 @@ func _build_top_buttons() -> void:
 		gravity_panel.hide()
 		shop_panel.hide()
 		goals_panel.visible = not goals_panel.visible)
+	minigames_button = _button("Minigames", "Zombie Mode, Target Toss and Impact Frenzy.")
+	minigames_button.pressed.connect(func() -> void:
+		var was_open := minigames_panel.visible
+		close_menus()
+		minigames_panel.visible = not was_open)
+	row.add_child(minigames_button)
 	row.add_child(goals_button)
 	row.add_child(shop_button)
 	var settings_button := _button("Settings", "Volume, fullscreen and progress.")

@@ -17,6 +17,10 @@ const LINES := {
 		"I was in like twelve pieces!", "Did I just... shatter?!", "Brr. Never freeze me again.",
 		"I can still feel my ice-fragments.", "Back in one piece. ONE. Piece.",
 	],
+	&"zombie": [
+		"Braaaains...", "Uuurrrgh...", "GRRAAAH!", "Brains? BRAINS!", "Mmmrrrgh...", "Fleeesh...", "*groan*",
+		"Hnnngh... fwend...", "Braaains... please...",
+	],
 	&"new_look": [
 		"Ooh! Do I look good? I look good.", "Fancy!", "New me, same pain.", "Is this my color? This is my color.",
 		"Lookin' sharp, if I say so myself.",

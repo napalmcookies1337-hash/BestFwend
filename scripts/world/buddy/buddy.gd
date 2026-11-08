@@ -100,6 +100,9 @@ const KNOCKDOWN_DV := 520.0
 const WALK_SPEED := 150.0
 ## At zero health it limps along at this fraction of full speed.
 const HURT_WALK_FACTOR := 0.45
+const ZOMBIE_SPEED := 0.55
+## Chasing stops this close to the target.
+const CHASE_REACH := 50.0
 const WALK_GAIN := 8.0
 const STEP_RATE := 10.0
 const LEG_SWING := 0.4
@@ -151,7 +154,15 @@ var view: BuddyView
 var mind: BuddyMind
 var bubble: SpeechBubble
 
+## Full health. Zombies have less.
+var max_health := MAX_HEALTH
 var health := MAX_HEALTH
+## A zombie in Zombie Mode: different look, shambles after the cursor arms out.
+var is_zombie := false
+## Walks toward look_target (the cursor) instead of wandering.
+var chase := false
+## Off for extra Buddies, so the HUD's health bar stays yours.
+var announces_health := true
 var is_knocked_out := false
 var is_shattered := false
 ## Takes hits and reports damage but never loses health (Impact Frenzy).
@@ -203,6 +214,7 @@ var _probe := PhysicsRayQueryParameters2D.new()
 ## Builds the body with the torso at `at`. Call before adding to the tree.
 func build(at: Vector2, body_color: Color, rng_seed: int = 0) -> void:
 	name = "Buddy"
+	add_to_group(&"buddies")
 	color = body_color
 	if rng_seed != 0:
 		_rng.seed = rng_seed
@@ -572,8 +584,8 @@ func _heal(delta: float) -> void:
 	if is_knocked_out:
 		return
 	_since_damage += delta
-	if _since_damage >= HEAL_DELAY and health < MAX_HEALTH:
-		_set_health(minf(health + HEAL_RATE * delta, MAX_HEALTH))
+	if _since_damage >= HEAL_DELAY and health < max_health:
+		_set_health(minf(health + HEAL_RATE * delta, max_health))
 
 
 func _knock_out() -> void:
@@ -598,14 +610,15 @@ func _knock_out() -> void:
 
 func _set_health(value: float) -> void:
 	var old := health
-	health = clampf(value, 0.0, MAX_HEALTH)
+	health = clampf(value, 0.0, max_health)
 	# Healing ticks every step; only announce whole-point changes and the ends.
-	if int(old) != int(health) or health == 0.0 or health == MAX_HEALTH:
+	if int(old) != int(health) or health == 0.0 or health == max_health:
 		_announce_health()
 
 
 func _announce_health() -> void:
-	Events.buddy_health_changed.emit(health, MAX_HEALTH, is_knocked_out)
+	if announces_health:
+		Events.buddy_health_changed.emit(health, max_health, is_knocked_out)
 
 
 func _enforce_limits() -> void:
@@ -666,7 +679,9 @@ func _balance(delta: float, g: Vector2) -> void:
 		accel = clampf(accel, 0.0, g.length() * 3.0)
 		torso.apply_central_force(up * accel * total_mass * s)
 
-	var speed := WALK_SPEED * lerpf(HURT_WALK_FACTOR, 1.0, health / MAX_HEALTH)
+	var speed := WALK_SPEED * lerpf(HURT_WALK_FACTOR, 1.0, health / max_health)
+	if is_zombie:
+		speed *= ZOMBIE_SPEED
 	if burn_time > 0.0:
 		speed = WALK_SPEED * PANIC_SPEED
 	var desired_side := walk_direction * speed
@@ -696,6 +711,14 @@ func _balance(delta: float, g: Vector2) -> void:
 	_steer(head, upright + head_offset, s * 0.8, delta)
 	_steer(parts[&"leg_l"], upright + swing, s, delta)
 	_steer(parts[&"leg_r"], upright - swing - tap, s, delta)
+	if is_zombie:
+		# Arms straight out toward whatever it's shambling at.
+		var facing := walk_direction
+		if facing == 0.0:
+			facing = signf((look_target - torso.global_position).dot(side)) if look_target != torso.global_position else 1.0
+		for id: StringName in [&"arm_l", &"arm_r"]:
+			if parts.has(id):
+				_steer(parts[id], upright - PI / 2 * facing + swing * 0.3, s * 0.7, delta)
 
 
 func _steer(part: BuddyPart, target_angle: float, strength: float, delta: float) -> void:
@@ -708,6 +731,10 @@ func _steer(part: BuddyPart, target_angle: float, strength: float, delta: float)
 func _update_wander(delta: float, g: Vector2) -> void:
 	var up := -g.normalized()
 	var side := Vector2(-up.y, up.x)
+	if chase and burn_time <= 0.0:
+		var gap := (look_target - torso.global_position).dot(side)
+		walk_direction = 0.0 if absf(gap) < CHASE_REACH else signf(gap)
+		return
 	if walk_direction == 0.0:
 		_idle_time -= delta
 		# On fire, it never stops running.

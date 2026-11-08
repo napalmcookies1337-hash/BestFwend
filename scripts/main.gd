@@ -144,6 +144,9 @@ func set_gravity(value: Vector2) -> void:
 ## Replaces the Buddy with a fresh, whole one at the spawn point. `reformed`
 ## means it's coming back after shattering, which it'll comment on.
 func respawn(reformed := false) -> void:
+	# A minigame with its own Buddies (Zombie Mode) brings yours back when it ends.
+	if minigames.replaces_buddy():
+		return
 	if buddy != null:
 		if grabber.held != null and is_instance_valid(grabber.held) and grabber.held.get_parent() == buddy:
 			grabber.forget()
@@ -152,6 +155,17 @@ func respawn(reformed := false) -> void:
 		buddy = null
 	_spawn_buddy(true, reformed)
 	Events.buddy_respawned.emit()
+
+
+## Takes your Buddy out of the room (Zombie Mode replaces it for a while).
+func remove_buddy() -> void:
+	if buddy == null:
+		return
+	if grabber.held != null and is_instance_valid(grabber.held) and grabber.held.get_parent() == buddy:
+		grabber.forget()
+	tools.release_all()
+	buddy.queue_free()
+	buddy = null
 
 
 func clean_up(quiet := false) -> void:
@@ -265,9 +279,8 @@ func explode(at: Vector2, radius: float, power: float, damage: float, sever_chan
 	query.shape = circle
 	query.transform = Transform2D(0.0, at)
 	query.collision_mask = Layers.BUDDY | Layers.OBJECTS
-	var hit_buddy: Buddy = null
-	var closest: BuddyPart = null
-	var closest_distance := INF
+	# Closest part per Buddy: [part, distance].
+	var victims: Dictionary = {}
 	for hit in get_world_2d().direct_space_state.intersect_shape(query, 96):
 		var body := hit["collider"] as RigidBody2D
 		if body == null:
@@ -278,15 +291,15 @@ func explode(at: Vector2, radius: float, power: float, damage: float, sever_chan
 		body.linear_velocity += direction * power * falloff
 		body.angular_velocity += _rng.randf_range(-8.0, 8.0) * falloff
 		if body is BuddyPart and not (body as BuddyPart).detached:
-			hit_buddy = body.get_parent() as Buddy
-			if offset.length() < closest_distance:
-				closest_distance = offset.length()
-				closest = body
+			var owner := body.get_parent() as Buddy
+			if not victims.has(owner) or offset.length() < victims[owner][1]:
+				victims[owner] = [body, offset.length()]
 	for other in get_tree().get_nodes_in_group(&"explosive"):
 		if other is Node2D and (other as Node2D).global_position.distance_to(at) < radius * 0.8:
 			other.call(&"prime", _rng.randf_range(0.1, 0.3))
-	if hit_buddy != null:
-		var falloff := _falloff(closest_distance, radius)
+	for hit_buddy: Buddy in victims:
+		var closest: BuddyPart = victims[hit_buddy][0]
+		var falloff := _falloff(victims[hit_buddy][1], radius)
 		var direction := (closest.global_position - at).normalized()
 		for limb: StringName in Buddy.LIMBS:
 			var part: BuddyPart = hit_buddy.parts.get(limb)
@@ -308,6 +321,15 @@ func explode(at: Vector2, radius: float, power: float, damage: float, sever_chan
 	add_shake(clampf(radius / 18.0, 8.0, 60.0))
 	Events.exploded.emit(at, radius)
 	Sfx.play(&"big_boom" if big else &"boom", 0.0 if big else -2.0)
+
+
+## Every Buddy in the room: just yours, or a horde in Zombie Mode.
+func buddies() -> Array[Buddy]:
+	var found: Array[Buddy] = []
+	for node in get_tree().get_nodes_in_group(&"buddies"):
+		if node is Buddy and not node.is_queued_for_deletion():
+			found.append(node)
+	return found
 
 
 ## Puts the equipped colour, skin and room on.
@@ -377,11 +399,16 @@ func _on_buddy_lost() -> void:
 
 ## A frozen Buddy was knocked out: break it into ice chunks and bring a new one.
 func _on_buddy_shattered() -> void:
-	_shatter.call_deferred(buddy)
+	shatter(buddy)
+
+
+## Breaks a frozen Buddy into ice chunks. Your own Buddy comes back after a moment.
+func shatter(broken: Buddy) -> void:
+	_shatter.call_deferred(broken)
 
 
 func _shatter(broken: Buddy) -> void:
-	if broken == null or broken != buddy:
+	if broken == null or not is_instance_valid(broken) or broken.is_queued_for_deletion():
 		return
 	var center := broken.torso.global_position
 	var chunks_per_part := {&"head": 4, &"torso": 5}
@@ -405,7 +432,9 @@ func _shatter(broken: Buddy) -> void:
 		grabber.forget()
 	tools.release_all()
 	broken.queue_free()
+	if broken != buddy:
+		return
 	buddy = null
 	get_tree().create_timer(SHATTER_RESPAWN, false).timeout.connect(func() -> void:
-		if buddy == null:
+		if buddy == null and not minigames.replaces_buddy():
 			respawn(true))

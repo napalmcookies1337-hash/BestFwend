@@ -39,6 +39,11 @@ func buddy() -> Buddy:
 	return sandbox.buddy
 
 
+## The Buddy a part belongs to. There can be several (Zombie Mode).
+func owner_of(part: BuddyPart) -> Buddy:
+	return part.get_parent() as Buddy
+
+
 ## The attached Buddy part under `at`, or null.
 func part_at(at: Vector2) -> BuddyPart:
 	var body := sandbox.grabber.body_at(at)
@@ -52,12 +57,11 @@ func part_near(at: Vector2, reach: float) -> BuddyPart:
 	var found := part_at(at)
 	if found != null:
 		return found
-	if buddy() == null:
-		return null
 	var best_distance := reach
-	for part in buddy().part_list:
-		var distance := part.global_position.distance_to(at) - part.radius
-		if distance < best_distance:
-			best_distance = distance
-			found = part
+	for someone in sandbox.buddies():
+		for part in someone.part_list:
+			var distance := part.global_position.distance_to(at) - part.radius
+			if distance < best_distance:
+				best_distance = distance
+				found = part
 	return found

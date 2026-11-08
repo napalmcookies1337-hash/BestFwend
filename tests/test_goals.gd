@@ -3,6 +3,7 @@ extends TestSuite
 ## Run with --fixed-fps 120.
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
+const ZombieModeScript := preload("res://scripts/minigames/zombie_mode.gd")
 const HZ := 120
 
 var main: Sandbox
@@ -154,38 +155,48 @@ func test_prestige_bonus_applies_to_hits() -> bool:
 	return true
 
 
-func test_ricochet() -> bool:
+func test_zombie_mode() -> bool:
 	main = MAIN_SCENE.instantiate()
 	add_child(main)
 	await frames(2)
-	main.grabber.manual_target = true
-	var game: Minigame = main.minigames.start(&"ricochet")
+	Game.unlock_all_tools()
+	var game: Minigame = main.minigames.start(&"zombies")
+	await physics_frames(2)
+	check(main.buddy == null, "your fwend sits this one out")
+	var horde: Array = game.zombies
+	check_eq(horde.size(), 5, "five zombies")
+	for zombie: Buddy in horde:
+		check(zombie.is_zombie and zombie.chase and zombie.skin_id == "zombie", "a proper zombie")
 	await physics_frames(3 * HZ)
-	var buddy := main.buddy
-	check(main.tools.locked, "tools locked to the Hand")
-	check(main.grabber.grab_at(buddy.torso.global_position), "grab")
-	main.grabber.target = Vector2(500, 400)
-	await physics_frames(70)
-	for index in 12:
-		main.grabber.target = Vector2(500 + index * 90, 400)
-		await physics_frames(1)
+	main.respawn()
+	check(main.buddy == null, "respawn can't bring your fwend back mid-game")
+	for zombie: Buddy in horde.duplicate():
+		zombie.take_hit({"part": &"head", "force": 1000.0, "damage": 500.0, "position": zombie.head.global_position})
+	check_eq(game.kills, 5, "five kills")
+	await physics_frames(int((ZombieModeScript.NEXT_WAVE_DELAY + 0.3) * HZ))
+	check_eq(game.wave, 2, "the next wave arrives")
+	check_eq(game.zombies.size(), 5, "five more")
+	await physics_frames(int(ZombieModeScript.CORPSE_TIME * HZ))
+	check_eq(get_tree().get_nodes_in_group(&"zombies").size(), 5, "the dead crumble away")
+	var frozen: Buddy = game.zombies[0]
+	frozen.freeze(5.0)
+	frozen.take_hit({"part": &"torso", "force": 1000.0, "damage": 500.0, "position": frozen.torso.global_position})
+	await frames(2)
+	check_eq(game.kills, 6, "a shattered zombie counts too")
+	check(main.buddy == null, "shattering a zombie doesn't bring yours back")
 	var results: Array = []
 	var on_finish := func(result: Dictionary) -> void: results.append(result)
 	Events.minigame_finished.connect(on_finish)
-	main.grabber.release()
-	check(main.grabber.locked, "no second throw")
-	for _step in 16 * HZ:
-		await physics_frames(1)
-		if not results.is_empty():
-			break
+	game.time_left = 0.01
+	await physics_frames(3)
 	Events.minigame_finished.disconnect(on_finish)
 	check_eq(results.size(), 1, "finished")
 	if not results.is_empty():
-		check(results[0]["score"] > 5.0, "travelled a fair way (%.1f m)" % results[0]["score"])
-		check(results[0]["reward"] > 0, "paid")
-		check_eq(float(Game.profile.best_scores["ricochet"]), results[0]["score"], "best saved")
-	check(not main.tools.locked and not main.grabber.locked, "locks lifted after")
-	check(not is_instance_valid(game) or game.is_queued_for_deletion(), "game cleaned up")
+		check_eq(results[0]["score"], 6.0, "scored by kills")
+		check_eq(results[0]["reward"], 6 * ZombieModeScript.PAY_PER_KILL, "paid per kill")
+	await frames(2)
+	check(get_tree().get_nodes_in_group(&"zombies").is_empty(), "the horde is gone")
+	check(main.buddy != null and not main.buddy.is_zombie, "your fwend is back")
 	return true
 
 
@@ -236,12 +247,15 @@ func test_goals_window() -> bool:
 		panel.show_page(page)
 		await frames(2)
 		check(screen.encloses(panel.get_rect()), "page %d fits (%s)" % [page, panel.get_rect()])
-	panel.show_page(2)
-	await frames(1)
+	main.hud.minigames_button.pressed.emit()
+	var games: MinigamesPanel = main.hud.minigames_panel
+	check(games.visible and not panel.visible, "Minigames has its own button and window")
+	await frames(2)
+	check(screen.encloses(games.get_rect()), "the minigames window fits (%s)" % games.get_rect())
 	var started: Array = []
 	var on_start := func(minigame_id: StringName) -> void: started.append(minigame_id)
 	Events.minigame_started.connect(on_start)
-	panel.minigame_chosen.emit(&"frenzy")
+	games.minigame_chosen.emit(&"frenzy")
 	Events.minigame_started.disconnect(on_start)
 	check_eq(started, [&"frenzy"], "Play starts a minigame")
 	main.hud.minigame_quit.emit()

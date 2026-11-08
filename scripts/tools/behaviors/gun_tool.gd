@@ -39,7 +39,7 @@ func fire(at: Vector2) -> void:
 	body.linear_velocity += direction * force
 	if body is BuddyPart and not (body as BuddyPart).detached:
 		var part := body as BuddyPart
-		buddy().take_hit({"part": part.part_name, "force": force, "damage": float(param("damage", 12.0)) * power(),
+		owner_of(part).take_hit({"part": part.part_name, "force": force, "damage": float(param("damage", 12.0)) * power(),
 				"source": &"pistol", "normal": -direction, "position": at})
 
 

@@ -12,7 +12,7 @@ func press(at: Vector2) -> void:
 		push = Vector2.RIGHT
 	part.linear_velocity += push * float(param("push", 380.0)) * power()
 	part.kick_squash(push, 900.0)
-	buddy().notice(&"poke", part.part_name)
+	owner_of(part).notice(&"poke", part.part_name)
 	Sfx.play(&"pop", -4.0, 1.3)
 
 

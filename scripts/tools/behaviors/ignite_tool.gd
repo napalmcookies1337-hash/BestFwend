@@ -11,4 +11,4 @@ func press(at: Vector2) -> void:
 	if part == null:
 		sandbox.room.decals.scorch(at, 14.0)
 		return
-	buddy().ignite(def.duration * power())
+	owner_of(part).ignite(def.duration * power())

@@ -8,7 +8,14 @@ const INK := Art.INK
 const INK_WIDTH := 4.0
 
 
+## Zombie Mode's look. Not sold in the shop.
+const ZOMBIE := {"name": "Zombie", "price": 0, "pattern": "rot", "face": "stitches"}
+const ZOMBIE_COLOR := Color("8fb36a")
+
+
 static func skin_of(skin_id: String) -> Dictionary:
+	if skin_id == "zombie":
+		return ZOMBIE
 	return Cosmetics.SKINS.get(skin_id, Cosmetics.SKINS["classic"])
 
 
@@ -27,6 +34,22 @@ static func pattern(canvas: CanvasItem, xf: Transform2D, skin_id: String, radius
 				var spot := Art.circle(radius * rng.randf_range(0.12, 0.22), Vector2.from_angle(rng.randf() * TAU) * radius * rng.randf_range(0.2, 0.85), 16)
 				for piece in Geometry2D.intersect_polygons(body, spot):
 					Art.flat(canvas, xf, piece, mark)
+		"rot":
+			var rng := RandomNumberGenerator.new()
+			rng.seed = seed_value
+			for _index in 4:
+				var center := Vector2.from_angle(rng.randf() * TAU) * radius * rng.randf_range(0.2, 0.7)
+				var blotch := Art.ellipse(radius * rng.randf_range(0.18, 0.3), radius * rng.randf_range(0.12, 0.2), center, 14)
+				for piece in Geometry2D.intersect_polygons(body, blotch):
+					Art.flat(canvas, xf, piece, Color("5f7d44"))
+			# A stitched-up gash.
+			var start := Vector2(-radius * 0.55, radius * 0.25)
+			var finish := Vector2(radius * 0.35, -radius * 0.05)
+			Art.line(canvas, xf, PackedVector2Array([start, finish]), 3.0, Color("3b2a2a"))
+			for stitch in 5:
+				var at := start.lerp(finish, (stitch + 0.5) / 5.0)
+				var across := (finish - start).orthogonal().normalized() * 7.0
+				Art.line(canvas, xf, PackedVector2Array([at - across, at + across]), 2.5, Color("3b2a2a"))
 		"stripes":
 			for index in 4:
 				var y := -radius * 0.75 + index * radius * 0.5
@@ -85,6 +108,11 @@ static func hat(canvas: CanvasItem, xf: Transform2D, skin_id: String) -> void:
 ## Over the face, after the eyes and mouth.
 static func face(canvas: CanvasItem, xf: Transform2D, skin_id: String) -> void:
 	match skin_of(skin_id).get("face", ""):
+		"stitches":
+			# Stitches across the forehead.
+			Art.line(canvas, xf, PackedVector2Array([Vector2(-30, -40), Vector2(-4, -46), Vector2(20, -38)]), 3.0, Color("3b2a2a"))
+			for stitch: Vector2 in [Vector2(-24, -42), Vector2(-12, -45), Vector2(0, -45), Vector2(12, -41)]:
+				Art.line(canvas, xf, PackedVector2Array([stitch + Vector2(-2, -6), stitch + Vector2(2, 6)]), 2.5, Color("3b2a2a"))
 		"shades":
 			for side: float in [-1.0, 1.0]:
 				Art.shape(canvas, xf, Art.round_rect(32, 22, 8, Vector2(21 * side, -6)), Color("1f1b2b"), INK_WIDTH * 0.7, false)

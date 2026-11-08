@@ -62,11 +62,11 @@ func _strike(body: RigidBody2D, at: Vector2, speed: float) -> void:
 	var sever_speed := float(param("sever_speed", 0.0))
 	var source := StringName(def.id)
 	if sever_speed > 0.0 and speed >= sever_speed and Buddy.LIMBS.has(part.part_name):
-		buddy().sever(part.part_name, direction * force * 0.6, source)
+		owner_of(part).sever(part.part_name, direction * force * 0.6, source)
 		Sfx.play(&"slice", 0.0)
 		sandbox.add_shake(10.0)
 		return
-	buddy().take_hit({"part": part.part_name, "force": force, "source": source,
+	owner_of(part).take_hit({"part": part.part_name, "force": force, "source": source,
 			"normal": -direction, "position": part.global_position.lerp(at, 0.5),
 			"bleed": sever_speed > 0.0 or force > 2600.0})
 	Sfx.play(&"slice" if sever_speed > 0.0 else &"smack", -2.0, 1.1 if sever_speed > 0.0 else 0.85)

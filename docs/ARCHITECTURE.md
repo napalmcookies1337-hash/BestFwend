@@ -150,6 +150,10 @@ The original file is kept once as `pre_v<N>.json`. Adding a new key read with a 
 - Slow-mo sets `Engine.time_scale`. Physics still steps 120 times per real second, with smaller steps, so it stays smooth.
 - Anything Clean Up should remove joins the `debris` group.
 
+## Art
+
+Tool and object art is vector, drawn in code with one style kit, [art.gd](../scripts/ui/art.gd): every shape gets an ink outline, a base fill, a shadow on its lower right and a highlight on its upper left (light from the upper left), so everything matches. [tool_art.gd](../scripts/ui/tool_art.gd) holds each drawing in a 100 x 100 design box; the toolbar icon, the object in the room and the weapon at the cursor all call the same function with a different transform. New art goes there, then check it on the art sheet (see README).
+
 ## Coding standards
 
 - Follow the GDScript style guide: `snake_case` functions and variables, `PascalCase` classes, `CONSTANT_CASE` constants, tabs.

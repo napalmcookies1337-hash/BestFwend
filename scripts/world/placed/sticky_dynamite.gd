@@ -52,14 +52,5 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var outline := Color("1e1426")
-	draw_rect(Rect2(-12, -30, 24, 60), outline)
-	draw_rect(Rect2(-8, -26, 16, 52), Color("d23b3b"))
-	draw_line(Vector2(-8, -10), Vector2(8, -10), Color("f2e3c6"), 3.0)
-	draw_line(Vector2(-8, 10), Vector2(8, 10), Color("f2e3c6"), 3.0)
 	var burnt := 1.0 - clampf(fuse / FUSE, 0.0, 1.0)
-	var tip := Vector2(6, -30 - 18 * (1.0 - burnt))
-	draw_line(Vector2(0, -30), tip, Color("2b2b2b"), 3.0)
-	var flicker := 4.0 + randf() * 4.0
-	draw_circle(tip, flicker, Color("ffd23f"))
-	draw_circle(tip, flicker * 0.5, Color("ffffff"))
+	ToolArt.dynamite_stick(self, Transform2D.IDENTITY, 4.0, Time.get_ticks_msec() / 1000.0, burnt)

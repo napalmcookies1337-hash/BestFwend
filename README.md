@@ -51,6 +51,14 @@ Renders the real game to `tests/shots/` using a throwaway save. Opens a window f
 & "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --path D:\ClaudeCode\BestFwend --fixed-fps 120 --disable-vsync res://tests/shots.tscn --quit-after 30000
 ```
 
+## Art sheet
+
+Draws every tool icon, room object and held weapon on one screen to `tests/shots/art_sheet.png`. Opens a window for a moment.
+
+```
+& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --path D:\ClaudeCode\BestFwend res://tests/art_sheet.tscn --quit-after 2000
+```
+
 ## Where saves live
 
 `%APPDATA%\Godot\app_userdata\Best Fwend\save\`: `save.json`, `save.prev.json` and `backups\`.

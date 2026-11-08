@@ -32,6 +32,4 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 11.0, Color("1e1426"))
-	draw_circle(Vector2.ZERO, 8.0, Color("b8bec9"))
-	draw_circle(Vector2(-2, -2), 3.0, Color("eef1f5"))
+	ToolArt.pin_head(self, Transform2D.IDENTITY, 3.5)

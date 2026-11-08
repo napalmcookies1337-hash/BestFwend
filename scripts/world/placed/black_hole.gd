@@ -81,10 +81,10 @@ func _collapse() -> void:
 
 func _draw() -> void:
 	var grow := minf(age / 0.4, 1.0) * (1.0 - clampf((age - duration + 0.3) / 0.3, 0.0, 1.0))
-	var size := 70.0 * grow
-	for ring in 4:
-		var angle := age * (3.0 + ring) + ring
-		var radius := size * (1.6 + ring * 0.45)
-		draw_arc(Vector2.ZERO, radius, angle, angle + PI * 1.2, 24, Color(0.55, 0.35, 0.95, 0.45 - ring * 0.08), 6.0, true)
-	draw_circle(Vector2.ZERO, size * 1.15, Color(0.4, 0.2, 0.75, 0.6))
-	draw_circle(Vector2.ZERO, size, Color(0.02, 0.0, 0.05))
+	if grow <= 0.01:
+		return
+	# Faint swirling arms reaching out to what it pulls.
+	for arm in 4:
+		var angle := age * 2.5 + TAU * arm / 4.0
+		draw_arc(Vector2.ZERO, 260.0 * grow, angle, angle + PI * 0.7, 24, Color(0.62, 0.38, 1.0, 0.18), 10.0, true)
+	ToolArt.black_hole(self, Transform2D(0.0, Vector2.ONE * 3.6, 0.0, Vector2.ZERO), 5.0, age, grow)

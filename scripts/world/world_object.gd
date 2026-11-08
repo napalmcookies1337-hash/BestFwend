@@ -110,46 +110,23 @@ func _on_body_entered(_body: Node) -> void:
 		detonate.call_deferred()
 
 
+
 func _draw() -> void:
-	var size: Vector2 = spec["size"]
-	var color: Color = spec["color"]
+	var ink := 4.0
+	var origin := Transform2D.IDENTITY
 	match kind:
 		&"ball":
-			draw_circle(Vector2.ZERO, size.x + 5, OUTLINE)
-			draw_circle(Vector2.ZERO, size.x, color)
-			draw_arc(Vector2.ZERO, size.x * 0.6, -PI * 0.9, -PI * 0.5, 8, Color(1, 1, 1, 0.5), 6.0, true)
+			ToolArt.ball(self, Art.place(origin, Vector2.ZERO, 0.0, 36.0 / 42.0), ink)
 		&"brick":
-			draw_rect(Rect2(-size / 2 - Vector2.ONE * 4, size + Vector2.ONE * 8), OUTLINE)
-			draw_rect(Rect2(-size / 2, size), color)
-			draw_line(Vector2(-size.x / 2, 0), Vector2(size.x / 2, 0), color.darkened(0.3), 3.0)
-			draw_line(Vector2(-6, -size.y / 2), Vector2(-6, 0), color.darkened(0.3), 3.0)
-			draw_line(Vector2(14, 0), Vector2(14, size.y / 2), color.darkened(0.3), 3.0)
+			ToolArt.brick(self, origin, ink)
 		&"anvil":
-			var body := PackedVector2Array([Vector2(-60, -33), Vector2(60, -33), Vector2(44, -12),
-					Vector2(22, -6), Vector2(26, 22), Vector2(48, 33), Vector2(-48, 33), Vector2(-26, 22),
-					Vector2(-22, -6), Vector2(-70, -18)])
-			var grown := PackedVector2Array()
-			for point in body:
-				grown.append(point * 1.08)
-			draw_colored_polygon(grown, OUTLINE)
-			draw_colored_polygon(body, color)
-			draw_line(Vector2(-56, -28), Vector2(52, -28), color.lightened(0.35), 4.0)
+			ToolArt.anvil(self, Art.place(origin, Vector2(5, -5), 0.0, 1.25), ink)
 		&"grenade":
-			draw_circle(Vector2.ZERO, size.x + 4, OUTLINE)
-			draw_circle(Vector2.ZERO, size.x, color)
-			draw_rect(Rect2(-6, -size.x - 10, 12, 10), Color("8b8f99"))
+			ToolArt.grenade(self, Art.place(origin, Vector2(0, -5), 0.0, 0.62), ink * 0.8)
 			var blink := fuse > 0.0 and fmod(fuse, maxf(fuse * 0.25, 0.08)) < 0.06
-			draw_circle(Vector2(0, -size.x - 12), 4.0, Color("ff3b3b") if blink else Color("5c1a1a"))
+			if blink:
+				draw_circle(Vector2(0, -22), 6.0, Color(1.0, 0.25, 0.2, 0.9))
 		&"rocket":
-			draw_colored_polygon(PackedVector2Array([Vector2(-32, -14), Vector2(24, -14), Vector2(44, 0), Vector2(24, 14), Vector2(-32, 14)]), OUTLINE)
-			draw_rect(Rect2(-28, -10, 50, 20), color)
-			draw_colored_polygon(PackedVector2Array([Vector2(22, -10), Vector2(38, 0), Vector2(22, 10)]), Color("d63b3b"))
-			draw_colored_polygon(PackedVector2Array([Vector2(-34, -6), Vector2(-48 - randf() * 16, 0), Vector2(-34, 6)]), Color("ffb02e"))
+			ToolArt.rocket(self, Art.place(origin, Vector2(-4, 0), PI / 2, 0.72), ink * 0.8, randf())
 		&"nuke":
-			draw_colored_polygon(PackedVector2Array([Vector2(-64, -34), Vector2(40, -34), Vector2(68, 0), Vector2(40, 34), Vector2(-64, 34)]), OUTLINE)
-			draw_rect(Rect2(-60, -28, 100, 56), color)
-			draw_circle(Vector2(-6, 0), 16, OUTLINE)
-			for blade in 3:
-				var angle := TAU * blade / 3.0
-				draw_colored_polygon(PackedVector2Array([Vector2(-6, 0), Vector2(-6, 0) + Vector2.from_angle(angle - 0.5) * 14, Vector2(-6, 0) + Vector2.from_angle(angle + 0.5) * 14]), color)
-			draw_rect(Rect2(-74, -24, 14, 48), Color("8b8f99"))
+			ToolArt.nuke(self, Art.place(origin, Vector2(-4, 0), -PI / 2, 1.1), ink)

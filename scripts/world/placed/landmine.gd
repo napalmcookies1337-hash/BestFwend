@@ -55,10 +55,5 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var outline := Color("1e1426")
-	draw_rect(Rect2(-SIZE.x / 2 - 4, -SIZE.y - 4, SIZE.x + 8, SIZE.y + 4), outline)
-	draw_rect(Rect2(-SIZE.x / 2, -SIZE.y, SIZE.x, SIZE.y), Color("5d6650"))
-	draw_rect(Rect2(-14, -SIZE.y - 10, 28, 10), outline)
-	draw_rect(Rect2(-10, -SIZE.y - 8, 20, 8), Color("8b8f99"))
 	var lit := armed and fmod(_age, 0.6) < 0.2
-	draw_circle(Vector2(22, -SIZE.y + 7), 4.0, Color("ff3b3b") if lit else Color("5c1a1a"))
+	ToolArt.landmine(self, Art.place(Transform2D.IDENTITY, Vector2(0, -8), 0.0, 0.85), 4.0, lit)

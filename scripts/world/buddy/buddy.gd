@@ -19,6 +19,8 @@ signal clicked(part: StringName)
 signal knocked_out
 signal revived
 signal limb_lost(limb: StringName, part: BuddyPart)
+## Knocked out while frozen: it broke into pieces.
+signal shattered
 ## Something happened to it that isn't a plain hit: &"ignited", &"burned_out", &"frozen",
 ## &"thawed", &"shocked", &"levitated", &"pinned", &"poke", &"slap", &"tickle", &"bomb_near",
 ## &"black_hole". The mind reacts to these.
@@ -149,6 +151,7 @@ var bubble: SpeechBubble
 
 var health := MAX_HEALTH
 var is_knocked_out := false
+var is_shattered := false
 var ground_hit := false
 var ground_distance := INF
 var stand_strength := 0.0
@@ -573,6 +576,15 @@ func _knock_out() -> void:
 	is_knocked_out = true
 	_ko_time = 0.0
 	idle_action = &""
+	if frozen_time > 0.0:
+		# Frozen solid, it doesn't fall limp: it breaks. The sandbox turns it into
+		# ice chunks and brings a new one.
+		is_shattered = true
+		set_physics_process(false)
+		_announce_health()
+		shattered.emit()
+		Events.buddy_shattered.emit()
+		return
 	if state != State.GRABBED:
 		_set_state(State.RAGDOLL)
 	_announce_health()

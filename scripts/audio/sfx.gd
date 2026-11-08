@@ -90,4 +90,8 @@ func _build() -> void:
 		Synth.hit(0.18, 0.2, 90.0, 0.4, 35)]), 0.75)
 	sounds[&"hum"] = Synth.to_stream(Synth.voice(70.0, 55.0, 1.2, [1.0, 0.6, 0.4, 0.3], 3.0, 0.08, 0.05, 0.2), 0.7)
 	sounds[&"clink"] = Synth.to_stream(Synth.voice(2600.0, 2400.0, 0.12, [1.0, 0.0, 0.4, 0.0, 0.2], 0.0, 0.0, 0.05, 0.002), 0.45)
+	sounds[&"shatter"] = Synth.to_stream(Synth.concat([Synth.hit(0.12, 0.9, 0.0, 0.0, 41),
+		Synth.voice(3400.0, 3100.0, 0.08, [1.0, 0.0, 0.5], 0.0, 0.0, 0.3, 0.002),
+		Synth.voice(2700.0, 2500.0, 0.1, [1.0, 0.0, 0.5], 0.0, 0.0, 0.3, 0.002),
+		Synth.voice(3900.0, 3600.0, 0.16, [1.0, 0.0, 0.4], 0.0, 0.0, 0.2, 0.002)]), 0.6)
 	sounds[&"fuse"] = Synth.to_stream(Synth.hit(0.8, 0.85, 0.0, 0.0, 37), 0.3)

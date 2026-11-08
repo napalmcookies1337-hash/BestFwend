@@ -9,7 +9,7 @@ extends Node
 
 ## Higher interrupts lower. Below CHATTY, lines also wait for a short gap.
 const PRIORITY := {
-	&"spawn": 3, &"respawn": 3, &"grabbed": 3, &"grabbed_head": 3, &"grabbed_limb": 3,
+	&"spawn": 3, &"respawn": 3, &"reformed": 3, &"grabbed": 3, &"grabbed_head": 3, &"grabbed_limb": 3,
 	&"dangling": 2, &"upside_down": 3, &"thrown": 4, &"hit_light": 1, &"hit_medium": 3,
 	&"hit_hard": 5, &"hit_head": 5, &"hit_object": 4, &"hit_ceiling": 4, &"survived": 2,
 	&"getting_up": 1, &"low_health": 2, &"revived": 5, &"healed": 2, &"idle": 0, &"bored": 0,
@@ -94,6 +94,8 @@ func _ready() -> void:
 	Events.slowmo_changed.connect(_on_slowmo_changed)
 	Events.room_cleaned.connect(_on_room_cleaned)
 	var greeting := &"respawn" if buddy.has_meta(&"respawned") else &"spawn"
+	if buddy.has_meta(&"reformed"):
+		greeting = &"reformed"
 	get_tree().create_timer(0.8, false).timeout.connect(func() -> void: say(greeting))
 
 

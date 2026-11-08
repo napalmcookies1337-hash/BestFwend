@@ -12,6 +12,8 @@ signal buddy_released(part: StringName, velocity: Vector2)
 signal buddy_hit(info: Dictionary)
 signal buddy_limb_lost(limb: StringName)
 signal buddy_knocked_out
+## Knocked out while frozen: it broke into ice chunks.
+signal buddy_shattered
 signal buddy_revived
 signal buddy_respawned
 signal buddy_health_changed(health: float, max_health: float, knocked_out: bool)

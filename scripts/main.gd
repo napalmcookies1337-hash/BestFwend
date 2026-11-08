@@ -15,6 +15,8 @@ const MAX_BLACK_HOLES := 2
 ## An explosive this close to the Buddy makes it nervous.
 const BOMB_NOTICE_RANGE := 450.0
 const SHAKE_DECAY := 9.0
+## Seconds between a shatter and the new Buddy arriving.
+const SHATTER_RESPAWN := 2.5
 
 var room: Room
 var world: Node2D
@@ -121,15 +123,16 @@ func set_gravity(value: Vector2) -> void:
 	Events.gravity_changed.emit(value)
 
 
-## Replaces the Buddy with a fresh, whole one at the spawn point.
-func respawn() -> void:
+## Replaces the Buddy with a fresh, whole one at the spawn point. `reformed`
+## means it's coming back after shattering, which it'll comment on.
+func respawn(reformed := false) -> void:
 	if buddy != null:
 		if grabber.held != null and is_instance_valid(grabber.held) and grabber.held.get_parent() == buddy:
 			grabber.forget()
 		tools.release_all()
 		buddy.queue_free()
 		buddy = null
-	_spawn_buddy(true)
+	_spawn_buddy(true, reformed)
 	Events.buddy_respawned.emit()
 
 
@@ -310,14 +313,17 @@ func _track(node: Node) -> void:
 		oldest.queue_free()
 
 
-func _spawn_buddy(respawned := false) -> void:
+func _spawn_buddy(respawned := false, reformed := false) -> void:
 	buddy = Buddy.new()
 	buddy.bounds = room.interior()
 	buddy.build(room.spawn_point(), Color(Game.profile.buddy_color))
 	if respawned:
 		buddy.set_meta(&"respawned", true)
+	if reformed:
+		buddy.set_meta(&"reformed", true)
 	buddy.lost.connect(_on_buddy_lost)
 	buddy.limb_lost.connect(_on_limb_lost)
+	buddy.shattered.connect(_on_buddy_shattered)
 	world.add_child(buddy)
 
 
@@ -334,3 +340,39 @@ func _on_limb_lost(limb: StringName, part: BuddyPart) -> void:
 
 func _on_buddy_lost() -> void:
 	respawn.call_deferred()
+
+
+## A frozen Buddy was knocked out: break it into ice chunks and bring a new one.
+func _on_buddy_shattered() -> void:
+	_shatter.call_deferred(buddy)
+
+
+func _shatter(broken: Buddy) -> void:
+	if broken == null or broken != buddy:
+		return
+	var center := broken.torso.global_position
+	var chunks_per_part := {&"head": 4, &"torso": 5}
+	for part in broken.part_list:
+		var count: int = chunks_per_part.get(part.part_name, 2)
+		for _index in count:
+			var chunk := IceChunk.new()
+			chunk.setup(broken.color, part.radius * _rng.randf_range(0.55, 0.85), _rng)
+			chunk.position = part.global_position + Vector2(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1)) * part.radius * 0.5
+			var away := (chunk.position - center).normalized() if chunk.position.distance_to(center) > 1.0 else Vector2.UP
+			chunk.linear_velocity = part.linear_velocity + away * _rng.randf_range(350.0, 900.0) + Vector2(0, -250)
+			chunk.angular_velocity = _rng.randf_range(-12.0, 12.0)
+			_track(chunk)
+			world.add_child(chunk)
+	fx.add(0.3, Fx.screen_flash(Color(0.8, 0.95, 1.0, 0.45)))
+	fx.add(0.5, Fx.ring(center, 260.0, Color(0.85, 0.97, 1.0, 0.9), 12.0))
+	fx.add(0.7, Fx.sparks(center, 26, 300.0, Color("e6f7ff"), _rng.randi()))
+	add_shake(22.0)
+	Sfx.play(&"shatter", 0.0)
+	if grabber.held != null and is_instance_valid(grabber.held) and grabber.held.get_parent() == broken:
+		grabber.forget()
+	tools.release_all()
+	broken.queue_free()
+	buddy = null
+	get_tree().create_timer(SHATTER_RESPAWN, false).timeout.connect(func() -> void:
+		if buddy == null:
+			respawn(true))

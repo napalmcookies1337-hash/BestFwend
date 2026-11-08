@@ -13,6 +13,10 @@ const LINES := {
 		"I'm back! ...Wait, what happened?", "Whoa. Deja vu.", "Okay, fresh start. Be cool.",
 		"Did I die? I feel like I died.", "New body, same bullshit.", "Huh. All my bits are back.",
 	],
+	&"reformed": [
+		"I was in like twelve pieces!", "Did I just... shatter?!", "Brr. Never freeze me again.",
+		"I can still feel my ice-fragments.", "Back in one piece. ONE. Piece.",
+	],
 	&"grabbed": [
 		"Hey!", "Whoa whoa whoa!", "Put me down!", "Where are we going?", "Hands off, pal!",
 		"Uh oh.", "Not again...", "Easy, easy!",

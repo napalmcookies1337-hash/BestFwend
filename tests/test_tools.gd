@@ -286,6 +286,35 @@ func test_freeze() -> bool:
 	return true
 
 
+func test_frozen_knockout_shatters() -> bool:
+	var shattered := [false]
+	var on_shatter := func() -> void: shattered[0] = true
+	Events.buddy_shattered.connect(on_shatter)
+	var old := buddy
+	buddy.freeze(6.0)
+	buddy.take_hit({"part": &"torso", "force": 3000.0, "damage": 500.0, "position": buddy.torso.global_position})
+	Events.buddy_shattered.disconnect(on_shatter)
+	check(shattered[0], "shatter event")
+	await frames(2)
+	check(not is_instance_valid(old), "the frozen Buddy is gone")
+	var chunks := get_tree().get_nodes_in_group(&"debris").filter(func(node: Node) -> bool: return node is IceChunk)
+	check(chunks.size() >= 10, "broke into ice chunks (%d)" % chunks.size())
+	check(main.buddy == null, "nobody home for a moment")
+	await _seconds(Sandbox.SHATTER_RESPAWN + 0.2)
+	check(main.buddy != null and main.buddy.part_list.size() == 6, "a new Buddy arrives")
+	check(main.buddy.has_meta(&"reformed"), "and knows it was reformed")
+	await _seconds(IceChunk.MELT_AFTER + IceChunk.MELT_TIME)
+	check(get_tree().get_nodes_in_group(&"debris").filter(func(node: Node) -> bool: return node is IceChunk).is_empty(), "the ice melts away")
+	return true
+
+
+func test_knockout_without_ice_does_not_shatter() -> bool:
+	buddy.take_hit({"part": &"torso", "force": 3000.0, "damage": 500.0, "position": buddy.torso.global_position})
+	await frames(2)
+	check(is_instance_valid(buddy) and buddy.is_knocked_out and not buddy.is_shattered, "just knocked out")
+	return true
+
+
 func test_black_hole() -> bool:
 	var spot := buddy.torso.global_position + Vector2(450, -200)
 	var ball := main.spawn_object(&"ball", spot + Vector2(-150, 0))

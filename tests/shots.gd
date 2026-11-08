@@ -116,6 +116,11 @@ func _capture() -> void:
 	game.time_left = 0.01
 	await _seconds(0.3)
 	await _shot("7_results")
+	# Other window sizes: the UI scales with the window and keeps 16:9.
+	for size: Vector2i in [Vector2i(1280, 720), Vector2i(1680, 1050)]:
+		get_window().size = size
+		await _seconds(0.5)
+		await _shot("res_%dx%d" % [size.x, size.y])
 	print("shots done")
 	get_tree().quit()
 

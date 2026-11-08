@@ -9,12 +9,14 @@ extends RefCounted
 ##   while you do something else.
 ## - Losing a limb, getting knocked out and shattering pay bonuses.
 
-const DAMAGE_RATE := 1.6
+## Balanced (Milestone 8) so a normal player owns all 21 base tools in about two
+## hours: tests/probe_progress.tscn plays the game from a fresh save to check.
+const DAMAGE_RATE := 0.8
 const FORCE_FLOOR := 500.0
-const FORCE_RATE := 1.0 / 500.0
+const FORCE_RATE := 1.0 / 1000.0
 ## Hits gentler than this that do no damage pay nothing.
 const MIN_PAYING_FORCE := 700.0
-const BONUS := {&"limb": 30.0, &"knockout": 80.0, &"shatter": 200.0}
+const BONUS := {&"limb": 15.0, &"knockout": 40.0, &"shatter": 100.0}
 ## Gentle actions that never hurt still pay a little.
 const KIND_PAY := {&"poke": 3.0, &"tickle": 2.0}
 

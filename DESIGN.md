@@ -50,6 +50,7 @@ There's no campaign. Achievements, daily challenges, and minigames are optional 
 | Pin | Katana (cuts off limbs) | Rocket Launcher | Telekinesis |
 | | | Mini-Nuke | |
 
+- **Prestige weapons (added 2026-11-07 at the creative director's request):** 15 more tools fill the rest of the toolbar (Giant Fist, Mega Clap, Slingshot, Spin Cycle; Wrecking Ball, Chainsaw, Falling Piano, Saw Launcher; Cluster Bomb, Airstrike, Rocket Pack; Tornado, Meteor Shower, Orbital Laser, Land Shark). Each prestige unlocks one at random for the Shop at a high price (120,000–280,000 $$$). Bought ones are kept through later prestiges.
 - **Spawned objects:** Balls, bricks, anvils, and severed limbs stay in the room, collide with everything, and can be grabbed. The oldest ones despawn past a cap.
 - **Tools are data-driven:** Each tool is a definition file plus a shared behavior script.
 
@@ -58,6 +59,7 @@ There's no campaign. Achievements, daily challenges, and minigames are optional 
 - **Spending:** Tools, tool upgrades (bigger blasts, more force, alternate modes), Buddy skins and colors, and backgrounds.
 - **No ranks.** Price is the only gate, so cost curves pace progression.
 - **Later milestones:** Achievements with rewards; daily challenges on the local clock; an optional prestige reset that gives a permanent $$$ multiplier.
+- **Pacing (Milestone 8):** A normal player owns all 21 base tools in about two hours. The first prestige needs 300,000 $$$ earned in a run.
 
 ## 8. Buddy reactions
 - **Speech:** Bubbles with written lines (with swearing), a gibberish babble voice, and squeaks and yelps.
@@ -69,7 +71,7 @@ There's no campaign. Achievements, daily challenges, and minigames are optional 
 
 ## 10. Game modes
 - **Sandbox:** The main mode.
-- **Minigames (Milestone 7):** Buddy Launch (fling for distance), Target Toss, Impact Frenzy (most damage in 30 seconds). Best scores are saved.
+- **Minigames (Milestone 7, revised):** Zombie Mode (2 minutes; your fwend is a zombie, five zombies at a time chase the cursor, kill as many as you can; replaced Buddy Launch/Ricochet at the creative director's request), Target Toss, Impact Frenzy (most damage in 30 seconds). They have their own Minigames button. Best scores are saved.
 
 ## 11. Technical direction
 - Godot 4.6 and GDScript, 2D, Windows desktop, mouse. 16:9 base (1920x1080), resizable window.
@@ -77,7 +79,7 @@ There's no campaign. Achievements, daily challenges, and minigames are optional 
 - Blood is painted into a persistent decal layer. Breaking a limb removes its joint.
 - An event bus decouples UI, economy and achievements from physics.
 - Versioned JSON saves in `user://`.
-- Vector art drawn in code. Sound effects and babble synthesized in code, plus a simple looping music track.
+- Vector art drawn in code. Sound effects and babble synthesized in code, plus a simple looping music track (bouncy cartoon style: plucky bass, xylophone tune, oom-pah chords).
 
 ## 12. Milestones
 1. Project shell, UI frame, save test.

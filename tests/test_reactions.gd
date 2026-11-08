@@ -308,6 +308,25 @@ func test_all_sounds_exist() -> bool:
 	return true
 
 
+func test_music_loop_builds() -> bool:
+	var started := Time.get_ticks_msec()
+	var track: AudioStreamWAV = Music.build()
+	var took := Time.get_ticks_msec() - started
+	check_eq(track.loop_mode, AudioStreamWAV.LOOP_FORWARD, "loops")
+	var seconds := track.data.size() / 2.0 / Music.RATE
+	check(absf(seconds - 16.0) < 0.05, "8 bars at 120 BPM (%.2f s)" % seconds)
+	check_eq(track.loop_end, track.data.size() / 2, "loops at the very end")
+	check(took < 8000, "builds in reasonable time (%d ms)" % took)
+	print("    music built in %d ms" % took)
+	var loud := 0
+	for index in range(0, track.data.size(), 400):
+		if absi(track.data.decode_s16(index)) > 3000:
+			loud += 1
+	check(loud > 100, "isn't silent")
+	check_eq(Music.player.bus, &"Music", "plays on the Music bus")
+	return true
+
+
 func _on_spoke(text: String, context: StringName) -> void:
 	spoken.append([text, context])
 

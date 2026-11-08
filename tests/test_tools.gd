@@ -105,6 +105,15 @@ func test_wrecking_ball() -> bool:
 	check_eq(get_tree().get_nodes_in_group(&"pins").size(), 0, "its chain isn't a pin")
 	await _seconds(3.0)
 	check(_hurt_by(&"wrecking_ball"), "smashed it (%s)" % [_sources()])
+	# Near a wall it swings out into the room, never into the wall.
+	for x: float in [320.0, Room.SIZE.x - 320.0]:
+		main.clean_up(true)
+		_use("wrecking_ball", Vector2(x, 700))
+		var ball: WorldObject = null
+		for object in main.objects:
+			if object is WorldObject and (object as WorldObject).kind == &"wrecking_ball":
+				ball = object
+		check(ball != null and main.room.interior().has_point(ball.global_position), "starts inside the room at x=%d" % x)
 	return true
 
 

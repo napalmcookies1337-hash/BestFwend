@@ -5,7 +5,7 @@ A physics buddy sandbox: fling, smash and blow up your round blob fwend to earn 
 - [DESIGN.md](DESIGN.md): the approved game design brief.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the code is organized, and the rules for adding to it.
 
-Current state: Milestone 7. Your fwend lives in the room with 21 tools: poke, slap, tickle and pin it; throw balls and bricks; drop anvils; swing a bat or katana; grenades, sticky dynamite, landmines, a pistol, rockets and a mini-nuke; lightning, fire, a freeze ray, black holes and telekinesis. Limbs come off. Hurting your fwend earns $$$ (more for variety, less for spamming one tool, bonuses for limbs, knockouts and shattering), which buys tools and upgrades in the Shop. You start with only the Hand. A frozen fwend that gets knocked out shatters into ice. The shop also sells 11 colours, 10 skins (hats, ears, horns, shades, patterns) and 6 rooms. The Goals window has 26 achievements, three daily challenges and prestige. Each prestige unlocks one random prestige weapon for the Shop (30,000-70,000 $$$); bought ones are kept through later prestiges. There are 15 of them, filling the rest of the toolbar: Giant Fist, Mega Clap, Slingshot, Spin Cycle, Wrecking Ball, Chainsaw, Falling Piano, Saw Launcher, Cluster Bomb, Airstrike, Rocket Pack, Tornado, Meteor Shower, Orbital Laser and Land Shark. The Minigames button has Zombie Mode (2 minutes, waves of five zombies chasing your cursor), Target Toss and Impact Frenzy.
+Current state: Milestone 8 (v1.0.0). A bouncy music loop plays in the background. Your fwend lives in the room with 21 tools: poke, slap, tickle and pin it; throw balls and bricks; drop anvils; swing a bat or katana; grenades, sticky dynamite, landmines, a pistol, rockets and a mini-nuke; lightning, fire, a freeze ray, black holes and telekinesis. Limbs come off. Hurting your fwend earns $$$ (more for variety, less for spamming one tool, bonuses for limbs, knockouts and shattering), which buys tools and upgrades in the Shop. You start with only the Hand. A frozen fwend that gets knocked out shatters into ice. The shop also sells 11 colours, 10 skins (hats, ears, horns, shades, patterns) and 6 rooms. The Goals window has 26 achievements, three daily challenges and prestige. Each prestige unlocks one random prestige weapon for the Shop (30,000-70,000 $$$); bought ones are kept through later prestiges. There are 15 of them, filling the rest of the toolbar: Giant Fist, Mega Clap, Slingshot, Spin Cycle, Wrecking Ball, Chainsaw, Falling Piano, Saw Launcher, Cluster Bomb, Airstrike, Rocket Pack, Tornado, Meteor Shower, Orbital Laser and Land Shark. The Minigames button has Zombie Mode (2 minutes, waves of five zombies chasing your cursor), Target Toss and Impact Frenzy.
 
 The Buddy's lines are in [data/lines/buddy_lines.gd](data/lines/buddy_lines.gd). Edit them freely.
 
@@ -66,6 +66,28 @@ Draws every tool icon, room object and held weapon on one screen to `tests/shots
 ```
 
 `res://tests/prestige_sheet.tscn` does the same for the prestige weapons (`tests/shots/prestige_sheet.png`).
+
+## Build for Windows
+
+Needs the Godot 4.6.2 export templates (Editor > Manage Export Templates). Makes one self-contained `build/BestFwend/BestFwend.exe`:
+
+```
+& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --headless --path D:\ClaudeCode\BestFwend --export-release "Windows Desktop" D:/ClaudeCode/BestFwend/build/BestFwend/BestFwend.exe
+```
+
+The release build has no debug keys (F7-F10). To play it, double-click `BestFwend.exe`; saves go to the same folder as below.
+
+## Balance probe
+
+A bot plays the real game from a fresh save (a tool every ~2 s, buys the cheapest tool it can) and prints when it buys each one. Add `++ --hours=0.5 --resume` to continue an earlier run in chunks.
+
+```
+& "E:\GoDOT\Godot_v4.6.2-stable_win64_console.exe" --headless --path D:\ClaudeCode\BestFwend --fixed-fps 120 res://tests/probe_progress.tscn ++ --hours=0.7
+```
+
+## Developer tools
+
+In debug runs (`Play.bat`), **F10** opens a panel to add $$$, unlock every tool or look, max upgrades, unlock achievements, get prestige-ready, unlock a prestige weapon, or max out everything. **F9** +$$$ 1,000, **F8** test ball, **F7** unlock every tool.
 
 ## Where saves live
 

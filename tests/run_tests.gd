@@ -12,6 +12,7 @@ const SUITES: Array[Script] = [
 	preload("res://tests/test_shop.gd"),
 	preload("res://tests/test_looks.gd"),
 	preload("res://tests/test_goals.gd"),
+	preload("res://tests/test_release.gd"),
 ]
 
 var _passed := 0

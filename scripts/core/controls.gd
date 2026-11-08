@@ -12,6 +12,7 @@ const KEYS := {
 	"dev_cash": KEY_F9, # Debug builds only.
 	"dev_ball": KEY_F8, # Debug builds only.
 	"dev_unlock": KEY_F7, # Debug builds only.
+	"dev_panel": KEY_F10, # Debug builds only.
 }
 const HOTBAR_SLOTS := 9
 

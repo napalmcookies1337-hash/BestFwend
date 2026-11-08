@@ -49,6 +49,8 @@ func _ready() -> void:
 	banner.hide()
 
 	results = PanelContainer.new()
+	# Solid, so nothing in the room shows through the scores.
+	results.add_theme_stylebox_override("panel", UiTheme.box(Color(UiTheme.PANEL, 1.0), UiTheme.PANEL_EDGE, 3, 18))
 	add_child(results)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)

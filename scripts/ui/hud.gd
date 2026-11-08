@@ -37,6 +37,7 @@ var combo_label: Label
 ## Tools the player has already been told they can afford, this session.
 var _announced: Dictionary = {}
 var settings_panel: SettingsPanel
+var dev_panel: DevPanel
 var gravity_panel: PanelContainer
 var gravity_strength: HSlider
 var category_buttons: Array[Button] = []
@@ -86,6 +87,9 @@ func _ready() -> void:
 	minigame_hud.quit_pressed.connect(minigame_quit.emit)
 	minigame_hud.quit_pressed.connect(func() -> void: _toasts.position.y = 28.0)
 	minigame_hud.again_pressed.connect(minigame_requested.emit)
+	dev_panel = DevPanel.new()
+	root.add_child(dev_panel)
+	dev_panel.hide()
 	for tool in ToolCatalog.all():
 		if Game.tool_status(tool.id) == &"buyable":
 			_announced[tool.id] = true
@@ -124,7 +128,8 @@ func set_base_gravity(value: float) -> void:
 ## Returns true if a menu was open.
 func close_menus() -> bool:
 	var was_open := settings_panel.visible or gravity_panel.visible or shop_panel.visible or goals_panel.visible \
-			or minigames_panel.visible
+			or minigames_panel.visible or dev_panel.visible
+	dev_panel.hide()
 	minigames_panel.hide()
 	settings_panel.hide()
 	gravity_panel.hide()

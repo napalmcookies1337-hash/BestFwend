@@ -40,7 +40,7 @@ func test_toolbar_shows_hand_selected() -> bool:
 	check(slots[0].button_pressed, "hand highlighted")
 	check_eq(slots[1].tool_id, "poke", "poke next")
 	check(not slots[1].usable, "but it isn't owned yet")
-	check_eq(slots[1].price, 50, "and shows its price")
+	check_eq(slots[1].price, 100, "and shows its price")
 	check(slots[6].prestige and not slots[6].usable, "the old empty slots hold locked prestige weapons")
 	var counts := {}
 	var prestige_counts := {}

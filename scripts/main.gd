@@ -114,6 +114,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("dev_unlock") and OS.is_debug_build():
 		Game.unlock_all_tools()
 		Events.notification_posted.emit("Debug: every tool unlocked.")
+	elif event.is_action_pressed("dev_panel") and OS.is_debug_build():
+		hud.dev_panel.visible = not hud.dev_panel.visible
 	else:
 		for number in range(1, Controls.HOTBAR_SLOTS + 1):
 			if event.is_action_pressed("tool_%d" % number):

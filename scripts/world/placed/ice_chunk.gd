@@ -19,6 +19,11 @@ func setup(skin: Color, size: float, rng: RandomNumberGenerator) -> void:
 	for index in corners:
 		var angle := TAU * index / corners + rng.randf_range(-0.3, 0.3)
 		points.append(Vector2.from_angle(angle) * size * rng.randf_range(0.55, 1.0))
+	# Random jitter can make a dent; physics needs the shape convex.
+	var hull := Geometry2D.convex_hull(points)
+	if hull.size() > 1 and hull[0] == hull[hull.size() - 1]:
+		hull.remove_at(hull.size() - 1)
+	points = hull
 	var shape := ConvexPolygonShape2D.new()
 	shape.points = points
 	var collider := CollisionShape2D.new()

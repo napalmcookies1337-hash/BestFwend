@@ -269,6 +269,54 @@ func unlock_all_tools() -> void:
 	Events.item_unlocked.emit(&"tool", &"all")
 
 
+## Debug cheat and test helper: owns every colour, skin and room.
+func unlock_all_looks() -> void:
+	for kind: StringName in [&"color", &"skin", &"room"]:
+		var owned := owned_looks(kind)
+		for look_id: String in Cosmetics.table(kind):
+			if not owned.has(look_id):
+				owned.append(look_id)
+		Events.looks_changed.emit(kind)
+	mark_dirty()
+
+
+## Debug cheat and test helper: every owned tool to its top upgrade.
+func max_upgrades() -> void:
+	for tool_id in profile.owned_tools:
+		if tool_id != "hand":
+			profile.tool_upgrades[tool_id] = MAX_UPGRADE
+	mark_dirty()
+	Events.item_unlocked.emit(&"tool", &"all")
+
+
+## Debug cheat and test helper: unlocks every achievement (and pays for them).
+func unlock_all_achievements() -> void:
+	for achievement_id: String in GoalData.ACHIEVEMENTS:
+		if not profile.achievements.has(achievement_id):
+			profile.achievements[achievement_id] = {"unlocked_at": int(Time.get_unix_time_from_system())}
+			Events.achievement_unlocked.emit(StringName(achievement_id))
+	mark_dirty()
+
+
+## Debug cheat: earns exactly what the next prestige still needs.
+func ready_prestige() -> void:
+	earn(maxi(prestige_goal() - profile.run_earned, 0), &"dev")
+
+
+## Debug cheat and test helper: a save that has seen everything — every tool,
+## upgrade, look and achievement, five prestiges and a pile of $$$.
+func max_everything() -> void:
+	profile.prestige_count = maxi(profile.prestige_count, 5)
+	unlock_all_tools()
+	max_upgrades()
+	unlock_all_looks()
+	unlock_all_achievements()
+	for minigame_id: String in ["zombies", "toss", "frenzy"]:
+		profile.best_scores[minigame_id] = maxf(float(profile.best_scores.get(minigame_id, 0.0)), 10.0)
+	earn(10000000, &"dev")
+	save_now()
+
+
 ## How much stronger upgrades make a tool: 1.0, 1.25, 1.5, 1.75.
 func tool_power(tool_id: String) -> float:
 	return 1.0 + UPGRADE_STEP * tool_level(tool_id)
@@ -340,7 +388,7 @@ func _record_daily(stat: String, amount: float, keep_max: bool) -> void:
 
 # --- Prestige -------------------------------------------------------------------
 
-const PRESTIGE_BASE := 50000
+const PRESTIGE_BASE := 300000
 const PRESTIGE_BONUS := 0.25
 
 

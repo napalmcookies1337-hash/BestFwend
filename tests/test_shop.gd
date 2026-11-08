@@ -23,7 +23,7 @@ func test_hit_value() -> bool:
 	check_eq(Economy.hit_value({"force": 400.0, "damage": 0.0}), 0.0, "a nudge pays nothing")
 	check(Economy.hit_value({"force": 900.0, "damage": 0.0}) > 0.0, "a solid bump pays a little")
 	var slam := Economy.hit_value({"force": 3000.0, "damage": 20.0})
-	check(slam > 30.0 and slam < 45.0, "a hard slam pays about 35 (%.1f)" % slam)
+	check(slam > 15.0 and slam < 23.0, "a hard slam pays about 18 (%.1f)" % slam)
 	return true
 
 
@@ -83,12 +83,12 @@ func test_buying_follows_the_chain() -> bool:
 	check_eq(Game.tool_status("slap"), &"locked", "slap needs poke first")
 	Game.earn(1000, &"test")
 	check(Game.buy_tool("poke"), "bought poke")
-	check_eq(Game.profile.money, 950, "paid 50")
+	check_eq(Game.profile.money, 900, "paid 100")
 	check_eq(Game.tool_status("slap"), &"buyable", "slap unlocked")
 	check(not Game.buy_tool("poke"), "can't buy twice")
 	check(not Game.buy_tool("katana"), "can't skip the chain")
 	check(not Game.buy_tool("mini_nuke"), "can't buy what you can't afford")
-	check_eq(Game.profile.money, 950, "failed buys cost nothing")
+	check_eq(Game.profile.money, 900, "failed buys cost nothing")
 	return true
 
 
@@ -149,7 +149,7 @@ func test_hits_pay_money() -> bool:
 	await physics_frames(480)
 	var before := Game.profile.money
 	main.buddy.take_hit({"part": &"torso", "force": 3000.0, "source": &"wall", "position": main.buddy.torso.global_position})
-	check(Game.profile.money > before + 20, "a slam pays (%d)" % (Game.profile.money - before))
+	check(Game.profile.money > before + 10, "a slam pays (%d)" % (Game.profile.money - before))
 	before = Game.profile.money
 	main.buddy.take_hit({"part": &"torso", "force": 1000.0, "damage": 300.0, "position": main.buddy.torso.global_position})
 	check(Game.profile.money >= before + Economy.BONUS[&"knockout"], "a knockout pays a bonus")
@@ -182,7 +182,7 @@ func test_shop_window_buys() -> bool:
 	check(absf(shop.get_rect().get_center().x - screen.get_center().x) < 4.0, "centred")
 	var poke_button: Button = shop.cards["poke"]["button"]
 	check(poke_button.disabled, "can't afford poke yet")
-	Game.earn(60, &"test")
+	Game.earn(110, &"test")
 	check(not poke_button.disabled, "now it can")
 	poke_button.pressed.emit()
 	check(Game.owns_tool("poke"), "bought from the shop")
@@ -214,7 +214,7 @@ func test_new_tool_is_announced_once() -> bool:
 	var on_toast := func(text: String) -> void: toasts.append(text)
 	var toast_box: VBoxContainer = main.hud._toasts
 	var before := toast_box.get_child_count()
-	Game.earn(60, &"test")
+	Game.earn(110, &"test")
 	check_eq(toast_box.get_child_count(), before + 1, "told about Poke")
 	check(main.hud.shop_button.text.contains("!"), "Shop button marked")
 	Game.earn(1, &"test")

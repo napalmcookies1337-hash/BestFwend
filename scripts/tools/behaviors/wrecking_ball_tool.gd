@@ -9,9 +9,13 @@ const BALL_RADIUS := 72.0
 func press(at: Vector2) -> void:
 	var length := clampf(at.y - 30.0, float(param("min_chain", 350.0)), Room.FLOOR_Y - 30.0 - BALL_RADIUS - 10.0)
 	var anchor_point := Vector2(clampf(at.x, 300.0, Room.SIZE.x - 300.0), 30.0)
-	# Start swung out to one side, so it sweeps across under the anchor.
-	var side := -1.0 if randf() < 0.5 else 1.0
-	var start := anchor_point + Vector2.from_angle(PI / 2 + side * 1.1) * length
+	# Start swung out to whichever side has more room (never inside a wall), so it
+	# sweeps across under the anchor.
+	var room_left := anchor_point.x - BALL_RADIUS - 40.0
+	var room_right := Room.SIZE.x - anchor_point.x - BALL_RADIUS - 40.0
+	var side := 1.0 if room_left > room_right else -1.0
+	var swing := minf(1.1, asin(clampf(maxf(room_left, room_right) / length, 0.0, 1.0)))
+	var start := anchor_point + Vector2.from_angle(PI / 2 + side * swing) * length
 	start.y = maxf(start.y, 120.0)
 	var ball := sandbox.spawn_object(&"wrecking_ball", start, Vector2.ZERO, power())
 	ball.anchor = anchor_point

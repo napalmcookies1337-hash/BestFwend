@@ -5,7 +5,7 @@ A physics buddy sandbox: fling, smash and blow up your round blob fwend to earn 
 - [DESIGN.md](DESIGN.md): the approved game design brief.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the code is organized, and the rules for adding to it.
 
-Current state: Milestone 4. Your fwend lives in the room with all 21 tools: poke, slap, tickle and pin it; throw balls and bricks; drop anvils; swing a bat or katana; grenades, sticky dynamite, landmines, a pistol, rockets and a mini-nuke; lightning, fire, a freeze ray, black holes and telekinesis. Limbs come off. Hurting your fwend earns $$$ (more for variety, less for spamming one tool, bonuses for limbs, knockouts and shattering), which buys tools and upgrades in the Shop. You start with only the Hand. A frozen fwend that gets knocked out shatters into ice.
+Current state: Milestone 4. Your fwend lives in the room with all 21 tools: poke, slap, tickle and pin it; throw balls and bricks; drop anvils; swing a bat or katana; grenades, sticky dynamite, landmines, a pistol, rockets and a mini-nuke; lightning, fire, a freeze ray, black holes and telekinesis. Limbs come off. Hurting your fwend earns $$$ (more for variety, less for spamming one tool, bonuses for limbs, knockouts and shattering), which buys tools and upgrades in the Shop. You start with only the Hand. A frozen fwend that gets knocked out shatters into ice. The shop also sells 11 colours, 10 skins (hats, ears, horns, shades, patterns) and 6 rooms.
 
 The Buddy's lines are in [data/lines/buddy_lines.gd](data/lines/buddy_lines.gd). Edit them freely.
 

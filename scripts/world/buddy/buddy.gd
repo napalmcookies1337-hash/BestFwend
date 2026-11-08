@@ -141,6 +141,8 @@ var total_mass := 0.0
 ## The room interior, for wandering and the lost check.
 var bounds := Rect2(0, 0, 1920, 880)
 var color := Color("ffa646")
+## Which Cosmetics.SKINS look it wears.
+var skin_id := "classic"
 ## Babble pitch. Skins may change it later.
 var voice_pitch := 1.0
 ## Where the eyes look, in world space.

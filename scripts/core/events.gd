@@ -33,6 +33,8 @@ signal money_changed(total: int)
 ## The variety combo multiplier changed (1.0 means no combo).
 signal combo_changed(multiplier: float)
 signal tool_purchased(tool_id: StringName)
+## A colour, skin or room was put on: kind is &"color", &"skin" or &"room".
+signal looks_changed(kind: StringName)
 signal item_unlocked(kind: StringName, item_id: StringName)
 
 # Goals (Milestone 7).

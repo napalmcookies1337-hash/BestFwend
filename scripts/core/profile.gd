@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS := {
 }
 const KNOWN_KEYS := [
 	"money", "lifetime_money", "owned_tools", "selected_tool", "tool_upgrades",
-	"owned_skins", "skin", "buddy_color", "owned_backgrounds", "background",
+	"owned_skins", "skin", "owned_colors", "buddy_color", "owned_backgrounds", "background",
 	"achievements", "stats", "best_scores", "prestige_count", "daily", "settings",
 ]
 
@@ -23,7 +23,8 @@ var selected_tool := "hand"
 var tool_upgrades: Dictionary = {}
 var owned_skins: Array[String] = ["classic"]
 var skin := "classic"
-## HTML color without "#", for the Buddy's body tint (Milestone 6).
+var owned_colors: Array[String] = ["orange"]
+## The equipped colour as HTML without "#" (one of Cosmetics.COLORS).
 var buddy_color := "ffa646"
 var owned_backgrounds: Array[String] = ["bedroom"]
 var background := "bedroom"
@@ -51,6 +52,7 @@ func to_dict() -> Dictionary:
 		"tool_upgrades": tool_upgrades.duplicate(true),
 		"owned_skins": owned_skins.duplicate(),
 		"skin": skin,
+		"owned_colors": owned_colors.duplicate(),
 		"buddy_color": buddy_color,
 		"owned_backgrounds": owned_backgrounds.duplicate(),
 		"background": background,
@@ -78,8 +80,11 @@ static func from_dict(data: Dictionary) -> Profile:
 	profile.tool_upgrades = _table(data, "tool_upgrades")
 	profile.owned_skins = _names(data, "owned_skins", ["classic"])
 	profile.skin = _owned_choice(data, "skin", profile.owned_skins)
+	profile.owned_colors = _names(data, "owned_colors", ["orange"])
 	profile.buddy_color = _text(data, "buddy_color", profile.buddy_color)
-	if not Color.html_is_valid(profile.buddy_color):
+	# Only a colour you own can be worn.
+	if not Color.html_is_valid(profile.buddy_color) \
+			or not profile.owned_colors.has(Cosmetics.color_id_for(profile.buddy_color)):
 		profile.buddy_color = Profile.new().buddy_color
 	profile.owned_backgrounds = _names(data, "owned_backgrounds", ["bedroom"])
 	profile.background = _owned_choice(data, "background", profile.owned_backgrounds)

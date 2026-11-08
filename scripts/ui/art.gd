@@ -132,5 +132,6 @@ static func place(parent: Transform2D, offset: Vector2, rotation := 0.0, scale :
 
 
 static func _fill(canvas: CanvasItem, points: PackedVector2Array, fill: Color) -> void:
-	if points.size() >= 3:
+	# Clipping can leave hairline slivers that can't be triangulated; skip those.
+	if points.size() >= 3 and not Geometry2D.triangulate_polygon(points).is_empty():
 		canvas.draw_colored_polygon(points, fill)

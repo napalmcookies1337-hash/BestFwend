@@ -72,6 +72,8 @@ func _ready() -> void:
 	hud.gravity_chosen.connect(set_gravity)
 	set_gravity(gravity)
 	_spawn_buddy()
+	Events.looks_changed.connect(func(_kind: StringName) -> void: apply_looks())
+	Events.progress_reset.connect(apply_looks)
 	if not Game.load_notice.is_empty():
 		Events.notification_posted.emit.call_deferred(Game.load_notice)
 
@@ -296,6 +298,14 @@ func explode(at: Vector2, radius: float, power: float, damage: float, sever_chan
 	Sfx.play(&"big_boom" if big else &"boom", 0.0 if big else -2.0)
 
 
+## Puts the equipped colour, skin and room on.
+func apply_looks() -> void:
+	room.set_background(Game.profile.background)
+	if buddy != null:
+		buddy.color = Color(Game.profile.buddy_color)
+		buddy.skin_id = Game.profile.skin
+
+
 func add_shake(amount: float) -> void:
 	shake = maxf(shake, amount)
 
@@ -327,6 +337,7 @@ func _spawn_buddy(respawned := false, reformed := false) -> void:
 	buddy = Buddy.new()
 	buddy.bounds = room.interior()
 	buddy.build(room.spawn_point(), Color(Game.profile.buddy_color))
+	buddy.skin_id = Game.profile.skin
 	if respawned:
 		buddy.set_meta(&"respawned", true)
 	if reformed:

@@ -106,18 +106,27 @@ func _draw() -> void:
 
 	var torso_xf := _part_transform(torso)
 	var head_xf := _part_transform(head)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	SkinArt.back(self, head_xf, buddy.skin_id, skin)
 	_ellipse(torso_xf, Vector2.ZERO, Vector2.ONE * (torso.radius + OUTLINE), outline)
 	_ellipse(head_xf, Vector2.ZERO, Vector2.ONE * (head.radius + OUTLINE), outline)
 	_ellipse(torso_xf, Vector2.ZERO, Vector2.ONE * torso.radius, skin)
 	_ellipse(torso_xf, Vector2(0, 16), Vector2(38, 34), belly)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	SkinArt.pattern(self, torso_xf, buddy.skin_id, torso.radius, skin, 11)
 	_draw_marks(torso_xf, torso)
 	for stump in buddy.stumps:
 		_ellipse(torso_xf, stump * 0.92, Vector2(15, 13), BLOOD)
 		_ellipse(torso_xf, stump * 0.92, Vector2(6, 5), Color("f3d9c4"))
 	_ellipse(head_xf, Vector2.ZERO, Vector2.ONE * head.radius, skin)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	SkinArt.pattern(self, head_xf, buddy.skin_id, head.radius, skin, 7)
 	_ellipse(head_xf, Vector2(-22, -30), Vector2(16, 11), Color(1, 1, 1, 0.28))
 	_draw_marks(head_xf, head)
 	_draw_face(head_xf)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	SkinArt.face(self, head_xf, buddy.skin_id)
+	SkinArt.hat(self, head_xf, buddy.skin_id)
 
 	for id: StringName in [&"arm_l", &"arm_r"]:
 		var arm: BuddyPart = buddy.parts.get(id)

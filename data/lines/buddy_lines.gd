@@ -17,6 +17,13 @@ const LINES := {
 		"I was in like twelve pieces!", "Did I just... shatter?!", "Brr. Never freeze me again.",
 		"I can still feel my ice-fragments.", "Back in one piece. ONE. Piece.",
 	],
+	&"new_look": [
+		"Ooh! Do I look good? I look good.", "Fancy!", "New me, same pain.", "Is this my color? This is my color.",
+		"Lookin' sharp, if I say so myself.",
+	],
+	&"new_room": [
+		"Ooh, new digs!", "Whoa, where are we?", "Nice place. Please don't wreck it.", "I could get used to this.",
+	],
 	&"grabbed": [
 		"Hey!", "Whoa whoa whoa!", "Put me down!", "Where are we going?", "Hands off, pal!",
 		"Uh oh.", "Not again...", "Easy, easy!",

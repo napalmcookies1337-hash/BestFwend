@@ -163,6 +163,16 @@ The original file is kept once as `pre_v<N>.json`. Adding a new key read with a 
 - Slow-mo sets `Engine.time_scale`. Physics still steps 120 times per real second, with smaller steps, so it stays smooth.
 - Anything Clean Up should remove joins the `debris` group.
 
+## Looks (colours, skins, rooms)
+
+- All looks are data in [cosmetics.gd](../data/cosmetics.gd): `COLORS`, `SKINS`, `ROOMS`. The first entry of each is free. A skin is a combination of a `pattern` (on the skin), a `back` piece (behind the head: ears, horns, antennae), a `hat` and a `face` piece. Purely cosmetic: nothing changes gameplay.
+- `Game.look_status / buy_look / equip_look(kind, id)` with kind `&"color"`, `&"skin"` or `&"room"`. Buying also equips. `Events.looks_changed` makes the sandbox apply them live (`Sandbox.apply_looks`) and the Buddy comment.
+- Saved in the profile: `owned_colors` + `buddy_color` (hex), `owned_skins` + `skin`, `owned_backgrounds` + `background`. A save can't wear anything it doesn't own.
+- Drawing: [skin_art.gd](../scripts/ui/skin_art.gd) (skins, and the shop's standing-Buddy preview) and [background_art.gd](../scripts/ui/background_art.gd) (each room, drawn over the full room; props kept clear of the HUD). Review both with `tests/looks_sheet.tscn` (same command as the art sheet).
+- Shop tabs 5-7 are Colors, Skins and Rooms, each card a live preview in your current look.
+
+To add a skin: add an entry to `SKINS` using existing pieces, or add a new case to the matching `SkinArt` function. To add a room: add to `ROOMS` and a case in `BackgroundArt.draw`.
+
 ## Art
 
 Tool and object art is vector, drawn in code with one style kit, [art.gd](../scripts/ui/art.gd): every shape gets an ink outline, a base fill, a shadow on its lower right and a highlight on its upper left (light from the upper left), so everything matches. [tool_art.gd](../scripts/ui/tool_art.gd) holds each drawing in a 100 x 100 design box; the toolbar icon, the object in the room and the weapon at the cursor all call the same function with a different transform. New art goes there, then check it on the art sheet (see README).

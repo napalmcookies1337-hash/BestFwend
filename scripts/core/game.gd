@@ -189,6 +189,68 @@ func upgrade_tool(tool_id: String) -> bool:
 	return true
 
 
+## Owned colour, skin or room ids for `kind` (&"color", &"skin", &"room").
+func owned_looks(kind: StringName) -> Array[String]:
+	match kind:
+		&"color":
+			return profile.owned_colors
+		&"skin":
+			return profile.owned_skins
+		_:
+			return profile.owned_backgrounds
+
+
+## The equipped colour, skin or room id.
+func equipped_look(kind: StringName) -> String:
+	match kind:
+		&"color":
+			return Cosmetics.color_id_for(profile.buddy_color)
+		&"skin":
+			return profile.skin
+		_:
+			return profile.background
+
+
+## &"equipped", &"owned", &"too_expensive" or &"buyable".
+func look_status(kind: StringName, item_id: String) -> StringName:
+	if equipped_look(kind) == item_id:
+		return &"equipped"
+	if owned_looks(kind).has(item_id):
+		return &"owned"
+	var item: Dictionary = Cosmetics.table(kind).get(item_id, {})
+	if item.is_empty() or profile.money < int(item["price"]):
+		return &"too_expensive"
+	return &"buyable"
+
+
+## Buys a look and puts it on straight away.
+func buy_look(kind: StringName, item_id: String) -> bool:
+	if look_status(kind, item_id) != &"buyable":
+		return false
+	if not spend(int(Cosmetics.table(kind)[item_id]["price"]), &"looks"):
+		return false
+	owned_looks(kind).append(item_id)
+	Events.item_unlocked.emit(kind, StringName(item_id))
+	equip_look(kind, item_id)
+	return true
+
+
+func equip_look(kind: StringName, item_id: String) -> bool:
+	if not owned_looks(kind).has(item_id):
+		return false
+	match kind:
+		&"color":
+			profile.buddy_color = Cosmetics.COLORS[item_id]["hex"]
+		&"skin":
+			profile.skin = item_id
+		_:
+			profile.background = item_id
+	mark_dirty()
+	save_now()
+	Events.looks_changed.emit(kind)
+	return true
+
+
 ## Debug cheat and test helper: owns every tool.
 func unlock_all_tools() -> void:
 	for tool in ToolCatalog.all():

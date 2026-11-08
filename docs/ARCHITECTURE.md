@@ -36,7 +36,8 @@ Don't add an autoload for a feature. New systems (economy, achievements) become 
 
 Declared in [events.gd](../scripts/core/events.gd), many ahead of the milestone that first emits them.
 
-- Use `Events` when the emitter shouldn't know who listens: "the Buddy was hit", "$$$ was earned". Achievements, rewards and stats will listen here.
+- Use `Events` when the emitter shouldn't know who listens: "the Buddy was hit", "$$$ was earned". Achievements, rewards and stats listen here.
+- **Connect inline functions with `Events.listen(self, Events.some_signal, func ...)`**, never `Events.some_signal.connect(func ...)`. Godot doesn't drop a lambda's connection when the node that made it is freed, so it would keep running after a respawn. Connecting a method (`Events.x.connect(_on_x)`) is fine either way. A test guards this.
 - Use a local signal when only the owner cares, as the HUD does with `main.gd`.
 - Call a method when you need a result or own the target: `Game.spend(...)`, `room.clear_decals()`.
 - Name signals in the past tense. Give them typed parameters.

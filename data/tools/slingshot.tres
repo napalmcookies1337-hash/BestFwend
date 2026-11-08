@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/tools/behaviors/slingshot_tool.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "slingshot"
+display_name = "Slingshot"
+description = "Grab your fwend, pull back, let go. It goes VERY far."
+category = 0
+order = 7
+price = 50000
+requires = ""
+prestige = true
+targeting = 3
+behavior = ExtResource("2")
+use_interval = 0
+duration = 0
+strength = 1
+params = {"power": 14.0, "max_speed": 7500.0}

@@ -9,6 +9,13 @@ static func stat_value(profile: Profile, stat: String) -> float:
 	match stat:
 		"tools_owned":
 			return profile.owned_tools.size()
+		"prestige_owned":
+			var count := 0
+			for tool_id in profile.owned_tools:
+				var tool := ToolCatalog.get_tool(tool_id)
+				if tool != null and tool.prestige:
+					count += 1
+			return count
 		"looks_owned":
 			# Bought looks only: each kind starts with one free item.
 			return profile.owned_colors.size() + profile.owned_skins.size() + profile.owned_backgrounds.size() - 3

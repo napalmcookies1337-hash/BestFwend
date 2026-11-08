@@ -48,8 +48,187 @@ func test_catalog_is_complete() -> bool:
 		check(tool.price > 0, "%s has a price" % tool.id)
 		check(tool.behavior != null, "%s has a behavior" % tool.id)
 		check(tools.behavior_for(tool.id) != null, "%s behavior builds" % tool.id)
-	check_eq(ids.size(), 21, "21 tools")
+	check_eq(ids.size(), 36, "36 tools")
+	for tool in ToolCatalog.all():
+		if tool.prestige:
+			check(tool.price >= 30000, "%s costs a lot (%d)" % [tool.id, tool.price])
+			check(tool.order >= 5, "%s sits in a slot that used to be empty" % tool.id)
 	return true
+
+
+# --- Prestige weapons ----------------------------------------------------------
+
+func test_giant_fist() -> bool:
+	_use("giant_fist", buddy.head.global_position)
+	await _seconds(1.5)
+	check(_hurt_by(&"fist"), "fist landed (%s)" % [_sources()])
+	return true
+
+
+func test_mega_clap() -> bool:
+	_use("mega_clap", buddy.torso.global_position)
+	await _seconds(0.6)
+	check(_sources().has(&"mega_clap"), "clapped")
+	check(buddy.health <= Buddy.MAX_HEALTH - 40.0, "it hurts (%.1f)" % buddy.health)
+	return true
+
+
+func test_slingshot() -> bool:
+	Game.select_tool("slingshot")
+	var start := buddy.torso.global_position
+	tools.press(start)
+	for step in 30:
+		tools.cursor = start + Vector2(step * 8.0, step * 2.0)
+		await physics_frames(1)
+	tools.release(tools.cursor)
+	await physics_frames(2)
+	check(buddy.torso.linear_velocity.x < -2500.0, "flung back the other way (%.0f)" % buddy.torso.linear_velocity.x)
+	return true
+
+
+func test_spin_cycle() -> bool:
+	Game.select_tool("spin_cycle")
+	var center := buddy.torso.global_position + Vector2(0, -250)
+	tools.press(buddy.torso.global_position)
+	for _step in int(1.5 * HZ):
+		tools.cursor = center
+		await physics_frames(1)
+	var speed := buddy.torso.linear_velocity.length()
+	tools.release(center)
+	check(speed > 2500.0, "whirling fast (%.0f)" % speed)
+	check(not buddy.levitated, "let go")
+	return true
+
+
+func test_wrecking_ball() -> bool:
+	_use("wrecking_ball", buddy.torso.global_position)
+	check_eq(get_tree().get_nodes_in_group(&"pins").size(), 0, "its chain isn't a pin")
+	await _seconds(3.0)
+	check(_hurt_by(&"wrecking_ball"), "smashed it (%s)" % [_sources()])
+	return true
+
+
+func test_chainsaw() -> bool:
+	Game.select_tool("chainsaw")
+	tools.press(buddy.parts[&"arm_r"].global_position)
+	for _step in int(1.5 * HZ):
+		if buddy.parts.has(&"arm_r"):
+			tools.cursor = buddy.parts[&"arm_r"].global_position
+		await physics_frames(1)
+	tools.release(tools.cursor)
+	check(_sources().has(&"chainsaw"), "it cuts")
+	check(buddy.severed.size() >= 1, "a limb came off")
+	return true
+
+
+func test_piano() -> bool:
+	_use("piano", buddy.head.global_position)
+	await _seconds(2.0)
+	check(_hurt_by(&"piano"), "piano landed (%s)" % [_sources()])
+	return true
+
+
+func test_saw_launcher() -> bool:
+	_use("saw_launcher", buddy.torso.global_position)
+	await _seconds(1.5)
+	check(buddy.severed.size() >= 1 or _hurt_by(&"sawblade"), "sawblade sliced (%s)" % [_sources()])
+	return true
+
+
+func test_cluster_bomb() -> bool:
+	var booms := [0]
+	Events.listen(main, Events.exploded, func(_at: Vector2, _radius: float) -> void: booms[0] += 1)
+	var bomb := main.spawn_object(&"cluster", buddy.torso.global_position + Vector2(140, -200))
+	bomb.fuse = 0.2
+	await _seconds(3.0)
+	check(booms[0] >= 6, "bomb plus bomblets went off (%d)" % booms[0])
+	check(_sources().has(&"explosion"), "and hurt it")
+	return true
+
+
+func test_airstrike() -> bool:
+	_use("airstrike", buddy.torso.global_position)
+	await _seconds(3.5)
+	check(_sources().count(&"explosion") >= 2, "missiles hit (%d)" % _sources().count(&"explosion"))
+	return true
+
+
+func test_rocket_pack() -> bool:
+	_use("rocket_pack", buddy.torso.global_position)
+	var floor_y := buddy.torso.global_position.y
+	var highest := floor_y
+	for _step in int(4.5 * HZ):
+		highest = minf(highest, buddy.torso.global_position.y)
+		await physics_frames(1)
+	check(highest < floor_y - 150.0, "it took off (%.0f)" % (floor_y - highest))
+	check(_sources().has(&"explosion"), "and blew up")
+	check(get_tree().get_nodes_in_group(&"debris").filter(func(n: Node) -> bool: return n is RocketPack).is_empty(), "pack gone")
+	return true
+
+
+func test_tornado() -> bool:
+	_use("tornado", buddy.torso.global_position)
+	var floor_y := buddy.torso.global_position.y
+	var highest := floor_y
+	for _step in int(3.0 * HZ):
+		highest = minf(highest, buddy.torso.global_position.y)
+		await physics_frames(1)
+	check(highest < floor_y - 150.0, "sucked up (%.0f)" % (floor_y - highest))
+	check(_sources().has(&"tornado"), "it hurts")
+	await _seconds(3.5)
+	check(get_tree().get_nodes_in_group(&"tornadoes").is_empty(), "blew itself out")
+	return true
+
+
+func test_meteor_shower() -> bool:
+	_use("meteor_shower", buddy.torso.global_position)
+	await _seconds(5.5)
+	check(_sources().count(&"explosion") >= 3, "meteors hit (%d)" % _sources().count(&"explosion"))
+	return true
+
+
+func test_orbital_laser() -> bool:
+	Game.select_tool("orbital_laser")
+	tools.press(buddy.torso.global_position)
+	for _step in int(1.0 * HZ):
+		tools.cursor = buddy.torso.global_position
+		await physics_frames(1)
+	tools.release(tools.cursor)
+	check(_sources().has(&"orbital_laser"), "beam hit")
+	check(buddy.burn_time > 0.0, "set it on fire")
+	check(main.room.decals.stained_samples() > 0, "scorched the floor")
+	return true
+
+
+func test_land_shark() -> bool:
+	_use("land_shark", Vector2(200, 800))
+	await _seconds(4.0)
+	check(buddy.severed.size() >= 1, "bit a limb off (%s)" % [_sources()])
+	check(get_tree().get_nodes_in_group(&"debris").filter(func(n: Node) -> bool: return n is LandShark).is_empty(), "dove back under")
+	return true
+
+
+func test_prestige_weapons_survive_abuse() -> bool:
+	var ids := ["giant_fist", "mega_clap", "wrecking_ball", "piano", "saw_launcher", "airstrike", "rocket_pack",
+			"tornado", "meteor_shower", "land_shark"]
+	for round_index in ids.size():
+		var target := buddy.torso.global_position + Vector2(randf_range(-150, 150), randf_range(-150, 0))
+		_use(ids[round_index], target)
+		main.grabber.release()
+		await physics_frames(60)
+	await _seconds(6.0)
+	check(main.buddy != null, "still has a buddy")
+	for part in main.buddy.part_list:
+		check(part.global_position.is_finite(), "%s finite" % part.part_name)
+		check(main.room.interior().grow(5.0).has_point(part.global_position), "%s inside" % part.part_name)
+	return true
+
+
+func _hurt_by(source: StringName) -> bool:
+	for hit in hits:
+		if hit.get("source", &"") == source or hit.get("tool", &"") == source:
+			return true
+	return false
 
 
 func test_poke() -> bool:

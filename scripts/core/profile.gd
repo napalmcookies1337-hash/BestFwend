@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS := {
 const KNOWN_KEYS := [
 	"money", "lifetime_money", "run_earned", "owned_tools", "selected_tool", "tool_upgrades",
 	"owned_skins", "skin", "owned_colors", "buddy_color", "owned_backgrounds", "background",
-	"achievements", "stats", "best_scores", "prestige_count", "daily", "settings",
+	"achievements", "stats", "best_scores", "prestige_count", "prestige_unlocks", "daily", "settings",
 ]
 
 var money := 0
@@ -37,6 +37,8 @@ var stats: Dictionary = {}
 ## minigame id -> best score.
 var best_scores: Dictionary = {}
 var prestige_count := 0
+## Prestige weapons unlocked for purchase, one per prestige.
+var prestige_unlocks: Array[String] = []
 ## Daily challenge state: date, challenge id, progress (Milestone 7).
 var daily: Dictionary = {}
 var settings: Dictionary = DEFAULT_SETTINGS.duplicate()
@@ -63,6 +65,7 @@ func to_dict() -> Dictionary:
 		"stats": stats.duplicate(true),
 		"best_scores": best_scores.duplicate(true),
 		"prestige_count": prestige_count,
+		"prestige_unlocks": prestige_unlocks.duplicate(),
 		"daily": daily.duplicate(true),
 		"settings": settings.duplicate(),
 	}, true)
@@ -96,6 +99,7 @@ static func from_dict(data: Dictionary) -> Profile:
 	profile.stats = _table(data, "stats")
 	profile.best_scores = _table(data, "best_scores")
 	profile.prestige_count = _count(data, "prestige_count")
+	profile.prestige_unlocks = _names(data, "prestige_unlocks", [] as Array[String])
 	profile.daily = _table(data, "daily")
 	profile.settings = _settings(data.get("settings"))
 	for key: Variant in data:

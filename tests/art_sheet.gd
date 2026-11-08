@@ -26,7 +26,7 @@ func _capture() -> void:
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1920, 1080), Color("231d31"))
 	var font := ThemeDB.fallback_font
-	var tools := ToolCatalog.all()
+	var tools := ToolCatalog.all().filter(func(tool: ToolDef) -> bool: return not tool.prestige)
 	# Big icons, 11 per row.
 	for index in tools.size():
 		var column := index % 11

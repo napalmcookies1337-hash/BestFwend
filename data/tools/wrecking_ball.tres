@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/tools/behaviors/wrecking_ball_tool.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "wrecking_ball"
+display_name = "Wrecking Ball"
+description = "A huge ball on a chain swings down through the room."
+category = 1
+order = 5
+price = 35000
+requires = ""
+prestige = true
+targeting = 1
+behavior = ExtResource("2")
+use_interval = 0
+duration = 0
+strength = 1
+params = {"min_chain": 350.0}

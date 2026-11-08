@@ -23,6 +23,9 @@ const CATEGORY_NAMES := {
 @export var price := 0
 ## Another tool's id that must be owned before this one can be bought.
 @export var requires := ""
+## A prestige weapon: each prestige unlocks one at random for purchase, and once
+## bought it's kept through later prestiges.
+@export var prestige := false
 ## Minimum seconds between uses while held, for rapid-fire tools. Not a cooldown.
 @export var use_interval := 0.0
 @export var duration := 0.0

@@ -170,13 +170,14 @@ The original file is kept once as `pre_v<N>.json`. Adding a new key read with a 
 - **Achievements** are data in [goals.gd](../data/goals.gd) (`GoalData.ACHIEVEMENTS`: name, description, stat, goal, reward). Every `record` checks them (`Goals.pending_unlocks`); unlocking pays, saves and emits `achievement_unlocked`. `tools_owned` and `looks_owned` are computed from the profile.
 - **Daily challenges:** `GoalData.DAILIES` templates with easy/medium/hard goals. `Game.daily()` makes three for today from templates whose tool you own (the same date always gives the same set) and they pay once when done. Uses the local date; `Game.date_override` fakes it in tests.
 - **Prestige:** after earning `PRESTIGE_BASE x (level + 1)` in a run, `Game.prestige()` wipes $$$, tools and upgrades and adds +25% to `reward_multiplier()`. Looks, achievements, stats, best scores and today's challenge progress stay.
+- **Prestige weapons:** ToolDefs with `prestige = true`, filling the toolbar slots past the base tools. `Game.tool_status` says `&"prestige_locked"` until a prestige picks one at random (`unlock_prestige_weapon`, stored in `profile.prestige_unlocks`); then it's bought like any tool. Bought prestige weapons and their upgrades survive later prestiges. Their behaviors are in `scripts/tools/behaviors/`; the ones that live in the room for a while are nodes in `scripts/world/placed/` (`RocketPack`, `Tornado`, `LandShark`), and thrown/dropped ones are `WorldObject` kinds (fist, piano, sawblade, wrecking_ball, cluster/bomblet, missile, meteor).
 - Rules are plain functions in [goals.gd](../scripts/core/goals.gd) so they're testable without the game running.
 
 ## Minigames
 
 [minigames.gd](../scripts/minigames/minigames.gd) starts one from a clean room, normal gravity and a fresh Buddy, and on `finish()` saves the best score, records `best_<id>`, pays `reward_for(score)` and emits `minigame_finished`. A game extends `Minigame`: set `time_left`, override `begin / tick / score_text / reward_for / cleanup`, and call `finish()`. `cleanup()` must undo anything it changed: `ToolUser.locked` and `Grabber.locked` (Hand only / no regrab), `Buddy.invulnerable`.
 
-- **Ricochet:** one throw, score is distance travelled in metres until it rests.
+- **Zombie Mode:** 2 min. Your Buddy is removed (`replaces_buddy`) and waves of five zombie Buddies (group `zombies`, `is_zombie`, `chase`) walk at the cursor; when a wave is dead the next comes. Score is kills (KO or shatter).
 - **Target Toss:** 45 s, hits count while the Buddy flies free.
 - **Impact Frenzy:** 30 s, any owned tools, score is damage, the Buddy can't be knocked out.
 

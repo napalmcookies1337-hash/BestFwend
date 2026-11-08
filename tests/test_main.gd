@@ -41,12 +41,16 @@ func test_toolbar_shows_hand_selected() -> bool:
 	check_eq(slots[1].tool_id, "poke", "poke next")
 	check(not slots[1].usable, "but it isn't owned yet")
 	check_eq(slots[1].price, 50, "and shows its price")
-	check(slots[6].disabled, "empty slots are disabled")
+	check(slots[6].prestige and not slots[6].usable, "the old empty slots hold locked prestige weapons")
 	var counts := {}
+	var prestige_counts := {}
 	for tool in ToolCatalog.all():
 		counts[tool.category] = counts.get(tool.category, 0) + 1
-	check_eq(ToolCatalog.all().size(), 21, "21 tools")
-	check_eq(counts, {0: 5, 1: 5, 2: 6, 3: 5}, "tools per category")
+		if tool.prestige:
+			prestige_counts[tool.category] = prestige_counts.get(tool.category, 0) + 1
+	check_eq(ToolCatalog.all().size(), 36, "36 tools")
+	check_eq(counts, {0: 9, 1: 9, 2: 9, 3: 9}, "every hotbar slot filled")
+	check_eq(prestige_counts, {0: 4, 1: 4, 2: 3, 3: 4}, "15 prestige weapons")
 	main.hud.category_buttons[2].pressed.emit()
 	check_eq(slots[5].tool_id, "mini_nuke", "Boom tab shows the nuke in slot 6")
 	return true

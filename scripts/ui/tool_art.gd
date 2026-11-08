@@ -42,6 +42,22 @@ static func draw_icon(canvas: CanvasItem, tool_id: String, center: Vector2, size
 		"black_hole": black_hole(canvas, xf, ink, 0.0, 1.0)
 		"telekinesis": brain(canvas, xf, ink)
 		"locked": padlock(canvas, Art.place(xf, Vector2.ZERO, 0.0, 0.8), ink, color)
+		# Prestige weapons.
+		"giant_fist": giant_fist(canvas, Art.place(xf, Vector2(0, 4), 0.0, 0.95), ink)
+		"mega_clap": mega_clap(canvas, xf, ink)
+		"slingshot": slingshot(canvas, xf, ink)
+		"spin_cycle": spin_cycle(canvas, xf, ink)
+		"wrecking_ball": wrecking_icon(canvas, xf, ink)
+		"chainsaw": chainsaw(canvas, Art.place(xf, Vector2(2, 2), -0.6, 1.0), ink)
+		"piano": piano(canvas, Art.place(xf, Vector2(0, 4), 0.0, 0.95), ink)
+		"saw_launcher": saw_icon(canvas, xf, ink)
+		"cluster_bomb": cluster_icon(canvas, xf, ink)
+		"airstrike": airstrike(canvas, xf, ink)
+		"rocket_pack": rocket_pack(canvas, xf, ink)
+		"tornado": tornado(canvas, xf, ink, 0.0)
+		"meteor_shower": meteor(canvas, Art.place(xf, Vector2(6, 8), -0.7, 0.85), ink, 0.0)
+		"orbital_laser": orbital_laser(canvas, xf, ink)
+		"land_shark": land_shark(canvas, xf, ink)
 		_:
 			Art.shape(canvas, xf, Art.circle(30), color, ink)
 
@@ -389,6 +405,204 @@ static func brain(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
 			PackedVector2Array([Vector2(8, 14), Vector2(16, 20), Vector2(22, 12), Vector2(30, 18)]),
 			PackedVector2Array([Vector2(6, 32), Vector2(12, 26), Vector2(20, 30)])]:
 		Art.line(canvas, xf, squiggle, 2.2, fold)
+
+
+# --- Prestige weapons --------------------------------------------------------
+
+## A huge glove fist, knuckles down.
+static func giant_fist(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	_cuff(canvas, Art.place(xf, Vector2(0, -2), 0.0, 1.4), Vector2(0, -26), ink)
+	Art.shape(canvas, xf, _rotated(Art.capsule(10, 34, Vector2.ZERO), 1.2, Vector2(-34, 4)), GLOVE, ink)
+	Art.shape(canvas, xf, Art.round_rect(78, 56, 20, Vector2(4, 6)), GLOVE, ink)
+	for knuckle in 4:
+		Art.shape(canvas, xf, Art.round_rect(19, 26, 9, Vector2(-23 + knuckle * 18.5, 34)), GLOVE, ink * 0.8)
+	for crease in 3:
+		Art.line(canvas, xf, PackedVector2Array([Vector2(-14 + crease * 18.5, 12), Vector2(-14 + crease * 18.5, 22)]), 2.0, GLOVE.darkened(0.25))
+
+
+static func mega_clap(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	Art.shape(canvas, xf, Art.star(10, 34, 16, Vector2(0, -6), 0.1), Color("ffcf3a"), ink)
+	Art.shape(canvas, xf, Art.star(10, 18, 9, Vector2(0, -6), 0.4), Color("ff7a3a"), 0.0, false)
+	glove_open(canvas, Art.place(xf, Vector2(-30, 8), 1.4, 0.6), ink)
+	glove_open(canvas, Art.place(xf, Vector2(30, 8), -1.4, 0.6), ink)
+
+
+static func slingshot(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	var wood := Color("a8693a")
+	Art.shape(canvas, xf, Art.round_rect(14, 44, 6, Vector2(0, 26)), wood, ink)
+	Art.shape(canvas, xf, PackedVector2Array([Vector2(-6, 8), Vector2(-30, -34), Vector2(-20, -40), Vector2(0, -6), Vector2(20, -40), Vector2(30, -34), Vector2(6, 8)]), wood, ink)
+	Art.line(canvas, xf, PackedVector2Array([Vector2(-25, -36), Vector2(-4, -6), Vector2(4, -6), Vector2(25, -36)]), 4.0, Color("d8352e"))
+	Art.shape(canvas, xf, Art.circle(13, Vector2(0, -6)), Color("ffa646"), ink)
+
+
+static func spin_cycle(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	var arrow := Color("6ec6ff")
+	for turn in 2:
+		var start := PI * turn
+		Art.line(canvas, xf, _arc(42, start + 0.3, start + 2.4), 6.0, INK)
+		Art.line(canvas, xf, _arc(42, start + 0.3, start + 2.4), 3.5, arrow)
+		var tip := Vector2.from_angle(start + 2.4) * 42.0
+		var along := Vector2.from_angle(start + 2.4 + PI / 2)
+		Art.shape(canvas, xf, PackedVector2Array([tip + along * 12, tip + along.orthogonal() * 9, tip - along.orthogonal() * 9]), arrow, ink * 0.7)
+	glove_open(canvas, Art.place(xf, Vector2(0, 2), 0.6, 0.55), ink)
+
+
+static func wrecking_ball(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	Art.shape(canvas, xf, Art.circle(12, Vector2(0, -44), 16), Color("8a8f9c"), ink)
+	Art.flat(canvas, xf, Art.circle(6, Vector2(0, -44), 12), INK)
+	Art.shape(canvas, xf, Art.circle(42, Vector2.ZERO, 40), Color("3a3f4d"), ink)
+	Art.flat(canvas, xf, Art.rect(84, 8, Vector2(0, -4)), Color("2a2e38"))
+	for rivet in 5:
+		Art.flat(canvas, xf, Art.circle(2.4, Vector2(-30 + rivet * 15, -4), 8), Color("8a8f9c"))
+
+
+static func wrecking_icon(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	for link in 4:
+		var at := Vector2(-30 + link * 9, -46 + link * 10)
+		Art.shape(canvas, xf, Art.moved(Art.ellipse(4, 7, Vector2.ZERO, 12), Transform2D(-0.7, at)), Color("8a8f9c"), ink * 0.6, false)
+	wrecking_ball(canvas, Art.place(xf, Vector2(10, 14), -0.6, 0.72), ink)
+
+
+static func chainsaw(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	var bar := Art.round_rect(18, 70, 9, Vector2(0, -26))
+	Art.shape(canvas, xf, bar, Color("c9ced8"), ink)
+	for tooth in 9:
+		var y := -58.0 + tooth * 8.0
+		Art.flat(canvas, xf, PackedVector2Array([Vector2(-9, y), Vector2(-14, y + 4), Vector2(-9, y + 7)]), INK)
+		Art.flat(canvas, xf, PackedVector2Array([Vector2(9, y), Vector2(14, y + 4), Vector2(9, y + 7)]), INK)
+	Art.shape(canvas, xf, Art.round_rect(40, 40, 10, Vector2(0, 22)), Color("f08a24"), ink)
+	Art.shape(canvas, xf, Art.round_rect(30, 12, 5, Vector2(0, 46)), Color("2b2b33"), ink)
+	Art.flat(canvas, xf, Art.rect(22, 5, Vector2(0, 18)), Color("2b2b33"))
+
+
+static func sawblade(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	Art.shape(canvas, xf, Art.star(14, 44, 36, Vector2.ZERO, 0.0), Color("d6dbe4"), ink)
+	Art.flat(canvas, xf, Art.circle(26, Vector2.ZERO, 32), Color("b8c0cc"))
+	Art.flat(canvas, xf, Art.circle(9, Vector2.ZERO, 16), INK)
+	Art.line(canvas, xf, _arc(18, -2.4, -1.2), 3.0, Color(1, 1, 1, 0.8))
+
+
+static func saw_icon(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	for streak in 3:
+		Art.stroke(canvas, xf, Vector2(-48, -16 + streak * 16), Vector2(-26, -16 + streak * 16), 4.0, Color.WHITE, ink * 0.6)
+	sawblade(canvas, Art.place(xf, Vector2(12, 0), 0.0, 0.85), ink)
+
+
+static func cluster_bomb(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	var red := Color("e8473c")
+	var body := Art.circle(34, Vector2(0, 8), 36)
+	Art.shape(canvas, xf, body, red, ink)
+	for band: float in [-6.0, 22.0]:
+		for piece in Geometry2D.intersect_polygons(body, Art.rect(80, 7, Vector2(0, band))):
+			Art.flat(canvas, xf, piece, Color("ffd23f"))
+	Art.shape(canvas, xf, Art.round_rect(18, 12, 3, Vector2(0, -28)), METAL, ink)
+	Art.stroke(canvas, xf, Vector2(0, -34), Vector2(8, -44), 2.4, Color("3a3030"), ink * 0.5)
+
+
+static func bomblet(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	Art.shape(canvas, xf, Art.circle(20, Vector2.ZERO, 20), Color("2f2b3a"), ink)
+	Art.flat(canvas, xf, Art.circle(8, Vector2.ZERO, 12), Color("e8473c"))
+
+
+static func cluster_icon(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	for spot: Vector2 in [Vector2(-34, 30), Vector2(34, 32), Vector2(-38, -20), Vector2(36, -24)]:
+		bomblet(canvas, Art.place(xf, spot, 0.0, 0.42), ink * 0.6)
+	cluster_bomb(canvas, Art.place(xf, Vector2(0, -2), 0.0, 0.8), ink)
+
+
+static func airstrike(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	var jet := PackedVector2Array([Vector2(-46, -30), Vector2(30, -36), Vector2(46, -30), Vector2(30, -24), Vector2(-46, -28)])
+	Art.shape(canvas, xf, PackedVector2Array([Vector2(-6, -34), Vector2(-24, -52), Vector2(-14, -52), Vector2(12, -34)]), Color("7b8494"), ink * 0.8)
+	Art.shape(canvas, xf, jet, Color("9aa3b5"), ink)
+	Art.shape(canvas, xf, PackedVector2Array([Vector2(-40, -30), Vector2(-48, -44), Vector2(-38, -44), Vector2(-30, -30)]), Color("7b8494"), ink * 0.8)
+	for bomb in 3:
+		rocket(canvas, Art.place(xf, Vector2(-24 + bomb * 22, 4 + bomb * 14), PI, 0.32), ink * 0.6, 0.0)
+
+
+static func rocket_pack(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	for side: float in [-1.0, 1.0]:
+		flame(canvas, Art.place(xf, Vector2(18 * side, 40), PI, 0.32), ink * 0.6, 0.0)
+		rocket(canvas, Art.place(xf, Vector2(18 * side, -4), 0.0, 0.62), ink, 0.0)
+	Art.shape(canvas, xf, Art.round_rect(60, 10, 4, Vector2(0, -6)), Color("6b4a33"), ink)
+	Art.shape(canvas, xf, Art.round_rect(60, 10, 4, Vector2(0, 14)), Color("6b4a33"), ink)
+
+
+## A whirling funnel. `phase` turns its bands.
+static func tornado(canvas: CanvasItem, xf: Transform2D, ink: float, phase: float) -> void:
+	var grey := Color("aeb7c7")
+	for band in 7:
+		var t := float(band) / 6.0
+		var width := lerpf(44.0, 10.0, t)
+		var center := Vector2(sin(phase * 3.0 + t * 4.0) * 8.0 * (1.0 - t), -40.0 + t * 84.0)
+		Art.shape(canvas, xf, Art.ellipse(width, lerpf(9.0, 4.0, t), center, 24), grey.darkened(t * 0.25), ink * 0.8)
+	for streak in 3:
+		var y := -30.0 + streak * 24.0
+		Art.line(canvas, xf, PackedVector2Array([Vector2(-30 + streak * 6, y), Vector2(-10, y + 4)]), 2.0, Color(1, 1, 1, 0.7))
+
+
+## A flaming rock, moving toward +y with its fire trailing toward -y.
+static func meteor(canvas: CanvasItem, xf: Transform2D, ink: float, phase: float) -> void:
+	var flicker := 1.0 + 0.12 * sin(phase * 30.0)
+	Art.shape(canvas, xf, PackedVector2Array([Vector2(-30, 0), Vector2(0, -110 * flicker), Vector2(30, 0)]), Color("e8401c"), ink * 0.6, false)
+	Art.flat(canvas, xf, PackedVector2Array([Vector2(-20, 0), Vector2(0, -76 * flicker), Vector2(20, 0)]), Color("ff8a1f"))
+	Art.flat(canvas, xf, PackedVector2Array([Vector2(-10, 4), Vector2(0, -44 * flicker), Vector2(10, 4)]), Color("ffe066"))
+	var rock := PackedVector2Array()
+	for corner in 9:
+		rock.append(Vector2.from_angle(TAU * corner / 9.0) * (34.0 + (8.0 if corner % 2 == 0 else -2.0)) + Vector2(0, 14))
+	Art.shape(canvas, xf, rock, Color("7a5a48"), ink)
+	Art.flat(canvas, xf, Art.circle(7, Vector2(-10, 8), 12), Color("5c4232"))
+	Art.flat(canvas, xf, Art.circle(5, Vector2(12, 24), 12), Color("5c4232"))
+
+
+static func orbital_laser(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	Art.flat(canvas, xf, Art.rect(30, 70, Vector2(0, 18)), Color(0.4, 0.95, 1.0, 0.35))
+	Art.shape(canvas, xf, Art.rect(12, 74, Vector2(0, 16)), Color("dffcff"), ink * 0.5, false)
+	for side: float in [-1.0, 1.0]:
+		Art.shape(canvas, xf, Art.rect(26, 16, Vector2(32 * side, -34)), Color("3b6fd6"), ink)
+		Art.line(canvas, xf, PackedVector2Array([Vector2(20 * side, -34), Vector2(44 * side, -34)]), 1.5, Color("9fd0ff"))
+	Art.shape(canvas, xf, Art.round_rect(26, 30, 6, Vector2(0, -34)), Color("d6dbe4"), ink)
+	Art.shape(canvas, xf, Art.circle(7, Vector2(0, -18), 14), Color("6ff0ff"), ink * 0.7)
+
+
+static func land_shark(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	shark(canvas, Art.place(xf, Vector2(-4, 4), -0.5, 0.85), ink, 1.0)
+	Art.shape(canvas, xf, Art.rect(100, 10, Vector2(0, 44)), Color("8a5a3b"), ink)
+	for chip: Vector2 in [Vector2(-30, 30), Vector2(26, 28), Vector2(-14, 22)]:
+		Art.shape(canvas, xf, Art.rect(8, 5, chip), Color("a8693a"), ink * 0.5, false)
+
+
+## A cartoon shark facing +x. `bite` opens the jaw (0 closed, 1 wide).
+static func shark(canvas: CanvasItem, xf: Transform2D, ink: float, bite: float) -> void:
+	var body := Color("7b8fa6")
+	Art.shape(canvas, xf, PackedVector2Array([Vector2(-60, -6), Vector2(-80, -30), Vector2(-74, -2), Vector2(-80, 24), Vector2(-60, 4)]), body.darkened(0.1), ink)
+	Art.shape(canvas, xf, PackedVector2Array([Vector2(-14, -20), Vector2(-4, -50), Vector2(12, -20)]), body.darkened(0.1), ink)
+	var jaw := 14.0 * bite
+	var upper := PackedVector2Array([Vector2(-62, -2), Vector2(-30, -24), Vector2(20, -24), Vector2(54, -10), Vector2(62, -2 - jaw), Vector2(16, 0)])
+	var lower := PackedVector2Array([Vector2(-62, -2), Vector2(16, 0), Vector2(56, 6 + jaw), Vector2(40, 18), Vector2(-20, 18)])
+	Art.shape(canvas, xf, lower, Color("e8eef4"), ink)
+	Art.shape(canvas, xf, upper, body, ink)
+	if bite > 0.1:
+		Art.flat(canvas, xf, PackedVector2Array([Vector2(16, 0), Vector2(60, -2 - jaw * 0.8), Vector2(54, 4 + jaw * 0.8)]), Color("6b1f2a"))
+		for tooth in 4:
+			var x := 24.0 + tooth * 8.0
+			Art.flat(canvas, xf, PackedVector2Array([Vector2(x, -1 - jaw * 0.3), Vector2(x + 6, -1 - jaw * 0.3), Vector2(x + 3, 6)]), Color.WHITE)
+	Art.flat(canvas, xf, Art.circle(4, Vector2(30, -12), 10), INK)
+	for gill in 3:
+		Art.line(canvas, xf, PackedVector2Array([Vector2(-4 + gill * 6, -14), Vector2(-8 + gill * 6, -2)]), 2.0, body.darkened(0.35))
+
+
+static func piano(canvas: CanvasItem, xf: Transform2D, ink: float) -> void:
+	var black := Color("2b2838")
+	Art.shape(canvas, xf, Art.rect(8, 20, Vector2(-40, 30)), black, ink)
+	Art.shape(canvas, xf, Art.rect(8, 20, Vector2(40, 30)), black, ink)
+	Art.shape(canvas, xf, Art.round_rect(96, 56, 6, Vector2(0, -8)), black, ink)
+	Art.flat(canvas, xf, Art.rect(84, 6, Vector2(0, -30)), black.lightened(0.25))
+	Art.shape(canvas, xf, Art.rect(92, 14, Vector2(0, 22)), Color("fbf8ef"), ink * 0.6, false)
+	for key in 9:
+		Art.line(canvas, xf, PackedVector2Array([Vector2(-41 + key * 10, 15), Vector2(-41 + key * 10, 29)]), 1.2, Color("9aa3b5"))
+		if key % 7 != 2 and key % 7 != 6:
+			Art.flat(canvas, xf, Art.rect(5, 8, Vector2(-36 + key * 10, 19)), black)
+	Art.flat(canvas, xf, Art.rect(20, 14, Vector2(0, -10)), Color("e6b33e"))
 
 
 ## A trophy cup: gold when won, grey while still a goal.

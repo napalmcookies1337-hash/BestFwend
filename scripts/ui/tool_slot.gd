@@ -10,6 +10,10 @@ var hotkey := 0
 ## Owned (or free) and ready to use.
 var usable := false
 var price := 0
+## A prestige weapon: drawn with a gold star instead of a plain lock.
+var prestige := false
+## A prestige weapon no prestige has unlocked yet: says so instead of a price.
+var prestige_locked := false
 
 
 func setup(id: String, key_number: int, tooltip: String, is_usable := true, tool_price := 0) -> void:
@@ -40,12 +44,17 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		ToolArt.draw_icon(self, tool_id, center + Vector2(0, -6), size.x * 0.56, Color.WHITE)
 		draw_rect(Rect2(Vector2.ZERO, size), Color(UiTheme.PANEL, 0.55))
-		ToolArt.draw_icon(self, "locked", Vector2(size.x - 20, 22), 26.0, UiTheme.MUTED)
+		if prestige:
+			Art.shape(self, Transform2D.IDENTITY, Art.star(5, 12, 5, Vector2(size.x - 18, 20)), Color("f2c14e"), 2.5)
+		else:
+			ToolArt.draw_icon(self, "locked", Vector2(size.x - 20, 22), 26.0, UiTheme.MUTED)
 		var font := get_theme_default_font()
-		var text := Fmt.grouped(price)
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
-		draw_string_outline(font, Vector2((size.x - width) / 2, size.y - 9), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 4, UiTheme.INK)
-		draw_string(font, Vector2((size.x - width) / 2, size.y - 9), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UiTheme.MONEY)
+		var text := "PRESTIGE" if prestige_locked else Fmt.grouped(price)
+		var font_size := 13 if prestige_locked else 16
+		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		var spot := Vector2((size.x - width) / 2, size.y - 9)
+		draw_string_outline(font, spot, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 4, UiTheme.INK)
+		draw_string(font, spot, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color("f2c14e") if prestige_locked else UiTheme.MONEY)
 	if hotkey > 0 and usable:
 		var font := get_theme_default_font()
 		draw_string(font, Vector2(9, 26), str(hotkey), HORIZONTAL_ALIGNMENT_LEFT, -1, 20,

@@ -96,7 +96,11 @@ func _ready() -> void:
 	Events.listen(self, Events.tool_selected, func(_id: StringName) -> void: _refresh_slots())
 	Events.progress_reset.connect(_refresh_slots)
 	Events.tool_purchased.connect(_on_tool_purchased)
-	Events.listen(self, Events.item_unlocked, func(_kind: StringName, _id: StringName) -> void: _refresh_slots())
+	Events.listen(self, Events.item_unlocked, func(kind: StringName, item_id: StringName) -> void:
+		_refresh_slots()
+		if kind == &"prestige_tool":
+			var weapon := ToolCatalog.get_tool(String(item_id))
+			show_toast("Prestige reward: the %s is now in the shop!" % weapon.display_name, GOLD))
 	Events.combo_changed.connect(_on_combo_changed)
 	Events.achievement_unlocked.connect(_on_achievement)
 	Events.daily_completed.connect(_on_daily_completed)
@@ -239,7 +243,7 @@ func _build_top_buttons() -> void:
 		settings_panel.hide()
 		gravity_panel.hide()
 		shop_panel.visible = not shop_panel.visible)
-	goals_button = _button("Goals", "Achievements, daily challenges, minigames and prestige.")
+	goals_button = _button("Goals", "Achievements, daily challenges and prestige.")
 	goals_button.pressed.connect(func() -> void:
 		settings_panel.hide()
 		gravity_panel.hide()
@@ -389,7 +393,10 @@ func _refresh_slots() -> void:
 		if owned:
 			slot.setup(tool.id, index + 1, "%s\n%s" % [tool.display_name, tool.description])
 		elif tool != null:
-			slot.setup(tool.id, index + 1, "%s  (%s in the shop)\n%s" % [tool.display_name, Fmt.money(tool.price), tool.description], false, tool.price)
+			var where := "a prestige reward" if Game.tool_status(tool.id) == &"prestige_locked" else "%s in the shop" % Fmt.money(tool.price)
+			slot.setup(tool.id, index + 1, "%s  (%s)\n%s" % [tool.display_name, where, tool.description], false, tool.price)
+			slot.prestige = tool.prestige
+			slot.prestige_locked = Game.tool_status(tool.id) == &"prestige_locked"
 		else:
 			slot.setup("", 0, "")
 		slot.set_pressed_no_signal(owned and tool.id == Game.profile.selected_tool)

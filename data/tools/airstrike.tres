@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ToolDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tool_def.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/tools/behaviors/airstrike_tool.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "airstrike"
+display_name = "Airstrike"
+description = "Calls in a line of missiles across the room."
+category = 2
+order = 7
+price = 55000
+requires = ""
+prestige = true
+targeting = 1
+behavior = ExtResource("2")
+use_interval = 0
+duration = 0
+strength = 1
+params = {"count": 7, "spread": 1100.0, "delay": 0.14}

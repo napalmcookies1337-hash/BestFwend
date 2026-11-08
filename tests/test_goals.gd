@@ -29,7 +29,7 @@ func after_each() -> void:
 
 
 func test_achievement_data_is_sound() -> bool:
-	check_eq(GoalData.ACHIEVEMENTS.size(), 24, "24 achievements")
+	check_eq(GoalData.ACHIEVEMENTS.size(), 26, "26 achievements")
 	for achievement_id: String in GoalData.ACHIEVEMENTS:
 		var spec: Array = GoalData.ACHIEVEMENTS[achievement_id]
 		check_eq(spec.size(), 5, "%s complete" % achievement_id)
@@ -141,6 +141,25 @@ func test_prestige() -> bool:
 	check_eq(Game.reward_multiplier(), 1.25, "pays x1.25")
 	check_eq(Game.prestige_goal(), Game.PRESTIGE_BASE * 2, "the next one needs more")
 	check(not Game.can_prestige(), "and starts from zero")
+	# Each prestige unlocks one prestige weapon to buy, and bought ones are kept.
+	check_eq(Game.profile.prestige_unlocks.size(), 1, "one prestige weapon unlocked")
+	var weapon := Game.profile.prestige_unlocks[0]
+	check(ToolCatalog.get_tool(weapon).prestige, "%s is a prestige weapon" % weapon)
+	check_eq(Game.tool_status(weapon), &"too_expensive", "costs a lot")
+	for tool in ToolCatalog.all():
+		if tool.prestige and tool.id != weapon:
+			check_eq(Game.tool_status(tool.id), &"prestige_locked", "%s still locked" % tool.id)
+			break
+	Game.earn(ToolCatalog.get_tool(weapon).price + Game.PRESTIGE_BASE * 2, &"test")
+	check(Game.buy_tool(weapon), "bought %s" % weapon)
+	Game.check_achievements()
+	check(Game.profile.achievements.has("prestige_weapon"), "achievement for the first one")
+	Game.upgrade_tool(weapon)
+	check(Game.prestige(), "prestiged again")
+	check(Game.profile.owned_tools.has(weapon), "kept the bought weapon")
+	check_eq(Game.tool_level(weapon), 1, "and its upgrade")
+	check_eq(Game.profile.prestige_unlocks.size(), 2, "and unlocked a different one")
+	check(Game.profile.prestige_unlocks[1] != weapon, "never the same one twice")
 	return true
 
 

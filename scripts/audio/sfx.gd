@@ -104,3 +104,13 @@ func _build() -> void:
 		Synth.voice(523.0, 523.0, 0.1, [1.0, 0.5, 0.3]), Synth.voice(659.0, 659.0, 0.1, [1.0, 0.5, 0.3]),
 		Synth.voice(784.0, 784.0, 0.1, [1.0, 0.5, 0.3]), Synth.voice(1046.0, 1046.0, 0.45, [1.0, 0.5, 0.3], 6.0, 0.012)]), 0.5)
 	sounds[&"fuse"] = Synth.to_stream(Synth.hit(0.8, 0.85, 0.0, 0.0, 37), 0.3)
+	# Prestige weapons.
+	sounds[&"chainsaw"] = Synth.to_stream(Synth.voice(95.0, 105.0, 0.16, [1.0, 0.9, 0.8, 0.7, 0.6, 0.5], 45.0, 0.12, 0.35, 0.005), 0.55)
+	sounds[&"siren"] = Synth.to_stream(Synth.concat([
+		Synth.voice(600.0, 1100.0, 0.5, [1.0, 0.3, 0.15], 0.0, 0.0, 0.0, 0.02),
+		Synth.voice(1100.0, 600.0, 0.5, [1.0, 0.3, 0.15], 0.0, 0.0, 0.0, 0.02)]), 0.4)
+	sounds[&"laser"] = Synth.to_stream(Synth.voice(1800.0, 900.0, 0.35, [1.0, 0.0, 0.5, 0.0, 0.3], 80.0, 0.08, 0.15, 0.003), 0.45)
+	sounds[&"chomp"] = Synth.to_stream(Synth.concat([Synth.hit(0.08, 0.6, 120.0, 0.4, 45),
+		Synth.hit(0.25, 0.4, 70.0, 0.5, 47)]), 0.9)
+	sounds[&"piano_crash"] = Synth.to_stream(Synth.concat([Synth.hit(0.3, 0.5, 60.0, 0.5, 49),
+		Synth.voice(262.0, 262.0, 0.9, [1.0, 0.0, 0.5, 0.3, 0.2], 3.0, 0.004, 0.05, 0.002)]), 0.8)

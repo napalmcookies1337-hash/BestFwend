@@ -7,13 +7,16 @@ var anchor: StaticBody2D
 var joint: PinJoint2D
 
 
-func setup(at: Vector2, body: RigidBody2D) -> void:
+## `is_pin` false for things like the wrecking ball's chain mount, which don't
+## count toward the Pin tool's limit and can't be clicked off.
+func setup(at: Vector2, body: RigidBody2D, is_pin := true) -> void:
 	name = "PinNail"
 	global_position = at
 	target = body
 	z_index = 9
 	add_to_group(&"debris")
-	add_to_group(&"pins")
+	if is_pin:
+		add_to_group(&"pins")
 	anchor = StaticBody2D.new()
 	anchor.collision_layer = 0
 	anchor.collision_mask = 0

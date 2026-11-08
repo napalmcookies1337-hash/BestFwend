@@ -206,8 +206,12 @@ func _refresh_tool_card(tool_id: String) -> void:
 	var button: Button = parts["button"]
 	var icon: ToolIcon = parts["icon"]
 	var state := Game.tool_status(tool_id)
-	icon.set_tool(tool_id, state == &"locked")
+	icon.set_tool(tool_id, state == &"locked" or state == &"prestige_locked")
 	match state:
+		&"prestige_locked":
+			_status(status, "Prestige weapon: unlocked by prestiging", Color("f2c14e"))
+			button.text = "Locked  ·  %s" % Fmt.money(tool.price)
+			button.disabled = true
 		&"owned":
 			var level := Game.tool_level(tool_id)
 			var cost := Game.upgrade_cost(tool_id)

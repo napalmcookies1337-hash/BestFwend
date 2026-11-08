@@ -141,13 +141,16 @@ func owns_tool(tool_id: String) -> bool:
 	return profile.owned_tools.has(tool_id)
 
 
-## &"owned", &"locked" (needs another tool first), &"too_expensive" or &"buyable".
+## &"owned", &"prestige_locked" (a prestige weapon not unlocked yet), &"locked"
+## (needs another tool first), &"too_expensive" or &"buyable".
 func tool_status(tool_id: String) -> StringName:
 	var tool := ToolCatalog.get_tool(tool_id)
 	if tool == null:
 		return &"locked"
 	if owns_tool(tool_id):
 		return &"owned"
+	if tool.prestige and not profile.prestige_unlocks.has(tool_id):
+		return &"prestige_locked"
 	if not tool.requires.is_empty() and not owns_tool(tool.requires):
 		return &"locked"
 	if profile.money < tool.price:
@@ -260,6 +263,8 @@ func unlock_all_tools() -> void:
 	for tool in ToolCatalog.all():
 		if not profile.owned_tools.has(tool.id):
 			profile.owned_tools.append(tool.id)
+		if tool.prestige and not profile.prestige_unlocks.has(tool.id):
+			profile.prestige_unlocks.append(tool.id)
 	mark_dirty()
 	Events.item_unlocked.emit(&"tool", &"all")
 
@@ -339,6 +344,21 @@ const PRESTIGE_BASE := 50000
 const PRESTIGE_BONUS := 0.25
 
 
+## Unlocks one random prestige weapon for purchase. Returns its id, or "" when
+## every one is already unlocked.
+func unlock_prestige_weapon(rng: RandomNumberGenerator = null) -> String:
+	var waiting: Array[String] = []
+	for tool in ToolCatalog.all():
+		if tool.prestige and not profile.prestige_unlocks.has(tool.id):
+			waiting.append(tool.id)
+	if waiting.is_empty():
+		return ""
+	var pick := waiting[(rng.randi() if rng != null else randi()) % waiting.size()]
+	profile.prestige_unlocks.append(pick)
+	mark_dirty()
+	return pick
+
+
 ## $$$ to earn this run before the next prestige is allowed.
 func prestige_goal() -> int:
 	return PRESTIGE_BASE * (profile.prestige_count + 1)
@@ -356,12 +376,24 @@ func prestige() -> bool:
 	profile.prestige_count += 1
 	profile.money = 0
 	profile.run_earned = 0
-	profile.owned_tools = ["hand"] as Array[String]
+	# Bought prestige weapons (and their upgrades) are kept; everything else goes.
+	var kept: Array[String] = ["hand"]
+	var kept_upgrades := {}
+	for tool_id in profile.owned_tools:
+		var tool := ToolCatalog.get_tool(tool_id)
+		if tool != null and tool.prestige:
+			kept.append(tool_id)
+			if profile.tool_upgrades.has(tool_id):
+				kept_upgrades[tool_id] = profile.tool_upgrades[tool_id]
+	profile.owned_tools = kept
 	profile.selected_tool = "hand"
-	profile.tool_upgrades = {}
+	profile.tool_upgrades = kept_upgrades
+	var unlocked := unlock_prestige_weapon()
 	mark_dirty()
 	save_now()
 	Events.prestiged.emit(profile.prestige_count)
+	if not unlocked.is_empty():
+		Events.item_unlocked.emit(&"prestige_tool", StringName(unlocked))
 	Events.progress_reset.emit()
 	Events.money_changed.emit(profile.money)
 	return true
